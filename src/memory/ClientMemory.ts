@@ -5,6 +5,7 @@ import { recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
 import { assertFact } from "./facts";
 import { DEFAULT_WRITES_PER_MINUTE } from "./limits";
+import { confirmFact, rejectFact, rollbackTo } from "./review";
 import { migrate } from "./schema";
 import type {
   AssertFactInput,
@@ -12,6 +13,9 @@ import type {
   Principal,
   RecordEpisodeInput,
   RecordEpisodeResult,
+  ReviewContext,
+  ReviewResult,
+  RollbackResult,
   WriteContext,
   WriteOptions,
 } from "./types";
@@ -51,6 +55,22 @@ export class ClientMemory extends DurableObject<Env> {
     );
   }
 
+  /** Browser review only: the Worker checks canReview(role, "browser") before calling. */
+  confirmFact(reviewerEmail: string, factId: string): ReviewResult {
+    const ctx = this.reviewContext(reviewerEmail);
+    return this.ctx.storage.transactionSync(() => confirmFact(this.sql, ctx, factId));
+  }
+
+  rejectFact(reviewerEmail: string, factId: string, reason?: string): ReviewResult {
+    const ctx = this.reviewContext(reviewerEmail);
+    return this.ctx.storage.transactionSync(() => rejectFact(this.sql, ctx, factId, reason));
+  }
+
+  rollbackTo(reviewerEmail: string, toSeq: number): RollbackResult {
+    const ctx = this.reviewContext(reviewerEmail);
+    return this.ctx.storage.transactionSync(() => rollbackTo(this.sql, ctx, toSeq));
+  }
+
   verifyAuditChain(): ChainCheck {
     return verifyAuditChain(this.sql);
   }
@@ -67,5 +87,9 @@ export class ClientMemory extends DurableObject<Env> {
       newId: () => crypto.randomUUID(),
       writesPerMinute: clampLimit(options.writesPerMinute, DEFAULT_WRITES_PER_MINUTE, 10_000),
     };
+  }
+
+  private reviewContext(reviewerEmail: string): ReviewContext {
+    return { reviewerEmail, now: new Date().toISOString() };
   }
 }
