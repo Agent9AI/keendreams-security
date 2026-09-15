@@ -133,15 +133,18 @@ entities(
 facts(
   id TEXT PRIMARY KEY,
   subject_id TEXT, predicate TEXT, object_id TEXT,
-  attributes TEXT,                              -- JSON: reason, severity
-  evidence_episode_id TEXT NOT NULL,
+  attributes TEXT,                              -- JSON: reason
+  evidence_episode_id TEXT NOT NULL,            -- first evidence
   status TEXT,                  -- proposed | trusted | rejected | superseded
   origin TEXT,                  -- mcp | allowlisted_source | ai_suggestion
-  suggested_by_model TEXT,
-  valid_from TEXT, valid_to TEXT,               -- world time
+  proposed_by TEXT, suggested_by_model TEXT,
+  valid_from TEXT, valid_to TEXT,               -- world time; supersession never edits these
   recorded_at TEXT, last_seen_at TEXT,          -- system time
   confirmed_by TEXT, confirmed_at TEXT,
-  superseded_by TEXT)
+  rejected_by TEXT, rejected_at TEXT,
+  decision_audit_seq INTEGER,                   -- audit row of confirm, reject or allowlisted trust
+  superseded_by TEXT, superseded_at TEXT,
+  superseded_audit_seq INTEGER)                 -- rollback uses both audit sequence columns
 
 fact_evidence(fact_id TEXT, episode_id TEXT, added_at TEXT)  -- corroboration
 
@@ -196,9 +199,15 @@ New kinds are added in code with a test, not at runtime.
 | `OBSERVED` | agent, identity -> asset, ioc-* | none |
 | `RELATED_TO` | any -> any | none |
 
-Re-asserting a current fact with the same subject, predicate and object adds a
-`fact_evidence` row and updates `last_seen_at` instead of creating a new fact.
-Proposed facts close nothing until confirmed.
+Re-asserting a proposed or trusted fact with the same subject, predicate, object
+and `valid_to` adds a `fact_evidence` row and updates `last_seen_at` instead of
+creating a new fact. If the existing fact is proposed and the new write comes from
+an allowlisted source, the existing fact becomes trusted.
+
+Every predicate also closes itself, so a trusted fact with a different validity
+window (for example a renewed `ACCEPTED_RISK`) replaces the older one.
+Supersession sets `superseded_at` and never edits `valid_to`. Proposed facts
+close nothing until confirmed.
 
 ## 6. Trust and writes
 
@@ -222,7 +231,8 @@ explicit admin decision per client.
    keys, bearer headers) and store the count. Flag instruction-like text as
    `instruction_like`. Flags inform reviewers and never raise trust.
 3. Insert the episode, or return the existing one on a `content_hash` match.
-   Payloads over 256 KB are split into linked parts.
+   Payloads over 256 KB are split into linked parts; payloads over 4 MB are
+   rejected with `too_large`.
 4. Upsert entities by canonical key.
 5. Insert the fact with its policy status, or add corroboration (5.4).
    Apply supersession only when the new fact is trusted.
@@ -240,8 +250,10 @@ same validation as `assert_fact` and is stored as `proposed` with
 
 - Lists proposed facts per client with evidence, flags, proposer and client name.
 - Confirm or reject, singly or in bulk. Confirming applies supersession.
-- Rollback to an audit sequence: facts confirmed after it return to `proposed`,
-  and facts they superseded are reopened. Rollback itself is an audit entry.
+- Rollback to an audit sequence: every fact confirmed, rejected or trusted by an
+  allowlisted source after it returns to `proposed`, and facts those decisions
+  superseded are reopened. Rollback itself is an audit entry. Trust undone by a
+  rollback counts as never granted when querying past dates.
 - Pages use the OAuth sign-in session cookie with CSRF tokens on every form.
 
 ## 7. MCP tools
