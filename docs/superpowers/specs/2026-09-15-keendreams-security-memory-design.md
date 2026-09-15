@@ -61,6 +61,7 @@ ACCESS_CLIENT_SECRET=
 ACCESS_TOKEN_URL=
 ACCESS_AUTHORIZATION_URL=
 ACCESS_JWKS_URL=
+ACCESS_ISSUER=          # optional; only if Access reports a different issuer
 COOKIE_ENCRYPTION_KEY=
 ADMIN_EMAILS=
 ```
@@ -84,7 +85,7 @@ MCP client (Claude Code, custom agents)
    v
 Worker  src/worker.ts
    OAuthProvider  -> /authorize, /token, /oauth/register  (browser sign-in)
-   createMcpHandler at /mcp  (Streamable HTTP)
+   createMcpHandler at /mcp  (MCP SDK v2 directly; no `agents` package)
    /review, /admin           (browser only, same sign-in)
    |
    |-- REGISTRY Durable Object       (who may use which client)
@@ -255,6 +256,9 @@ same validation as `assert_fact` and is stored as `proposed` with
   superseded are reopened. Rollback itself is an audit entry. Trust undone by a
   rollback counts as never granted when querying past dates.
 - Pages use the OAuth sign-in session cookie with CSRF tokens on every form.
+- The Worker runs with `global_fetch_strictly_public`, so outbound fetches can
+  only reach public addresses (SSRF protection; also enables Client ID
+  Metadata Document registration in the OAuth provider).
 
 ## 7. MCP tools
 
@@ -297,10 +301,15 @@ same validation as `assert_fact` and is stored as `proposed` with
    metadata, registers at `/oauth/register`, and opens `/authorize`.
 2. The Worker redirects to the deployer's Access for SaaS app. The user signs
    in with the deployer's identity provider.
-3. The Worker exchanges the code, verifies the ID token against
-   `ACCESS_JWKS_URL`, and completes authorization with props
-   `{ email, name, sub }`. The MCP client receives a Worker-issued token.
-   The Access token is never passed to the MCP client.
+3. The Worker exchanges the code (with PKCE), verifies the ID token (RS256
+   against `ACCESS_JWKS_URL`, `iss` equal to the token URL without `/token`,
+   `aud` equal to `ACCESS_CLIENT_ID`, not expired), and completes authorization
+   with `userId` set to the Access `sub` (never the email) and props
+   `{ sub, email, name, clientId, clientName }`. The MCP client receives a
+   Worker-issued token. The Access token is never passed to the MCP client.
+   Consent requests and upstream sign-in state are stored server-side in
+   `OAUTH_KV` for 10 minutes and consumed once; the consent form carries only
+   an opaque id and a CSRF token. The consent page sends `frame-ancestors 'none'`.
 4. A consent screen names the MCP client and its capabilities; approval is
    remembered in an encrypted cookie.
 5. Tools read the principal with `getMcpAuthContext()`.
@@ -422,7 +431,9 @@ No component sends data to the project authors.
 | Item | Fallback if not as expected |
 |------|-----------------------------|
 | Deploy button creates the Vectorize index with 768 dimensions | Worker creates the index on first request |
-| OAuth provider per-user grant revocation | Revoke per MCP client only (`deleteClient`) |
+| OAuth provider per-user grant revocation | Resolved: `revokeGrant(grantId, userId)` exists in 0.10.3 |
+| Deploy button creates `OAUTH_KV` when `wrangler.jsonc` omits the namespace id | README documents `wrangler kv namespace create OAUTH_KV` as the fallback |
+| Access ID tokens use RS256 with a key id, `iss` equal to the issuer URL and `aud` equal to the client id (live check against a real Access for SaaS app, Plan 2 Task 3) | Set `ACCESS_ISSUER`, or relax the audience check, and record what Access actually sends |
 | Hexa MCP read-only tool names | Captured from live `tools/list`; skill lists only confirmed read tools |
 | Workers AI model reliably returns schema-valid JSON for `suggest_facts` | Try another model; ship `suggest_facts` disabled by default if none qualifies |
 | Claude Desktop remote OAuth connection works | Omit Claude Desktop from `compatible_clients` |
