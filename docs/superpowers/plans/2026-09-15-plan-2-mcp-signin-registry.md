@@ -1947,4 +1947,656 @@ git add src/auth/types.ts src/auth/encoding.ts src/auth/onceStore.ts src/auth/ac
 git commit -m "Add Access sign-in primitives: PKCE, ID token verification, one-time state and signed cookies"
 ```
 
+---
+
+### Task 4: Consent page and sign-in routes
+
+**Files:**
+- Create: `src/web/html.ts`, `src/auth/consent.ts`, `src/auth/handler.ts`, `tests/oauthFake.ts`, `tests/auth-handler.test.ts`
+- Modify: `tests/authFixtures.ts` (add `TEST_ENV_SETTINGS`)
+
+**Interfaces:**
+- Consumes: `readAccessSettings`, `SetupError`, `type AppSettings` (Task 1); every export of Task 3.
+- Produces:
+  - `escapeHtml(value: string): string`, `htmlResponse(html: string, init?: { status?: number; headers?: Record<string, string> }): Response`.
+  - `renderConsent(options: { clientName: string; redirectHost: string; consentId: string; csrfToken: string; csrfCookie: string }): Response`.
+  - `type AuthEnv = Env & AppSettings & { OAUTH_PROVIDER: OAuthHelpers }`, `type AuthDeps = { fetch: FetchLike; now: () => number }`, `createAuthHandler(deps?: AuthDeps): ExportedHandlerWithFetch<AuthEnv>`.
+  - Test helpers: `fakeOAuth(overrides?)`, `TEST_ENV_SETTINGS`.
+
+- [ ] **Step 1: Add `TEST_ENV_SETTINGS` to `tests/authFixtures.ts`**
+
+Add after `TEST_SETTINGS`:
+
+```ts
+/** The same values as `TEST_SETTINGS`, in the shape the Worker reads from its environment. */
+export const TEST_ENV_SETTINGS = {
+  ACCESS_CLIENT_ID: TEST_SETTINGS.clientId,
+  ACCESS_CLIENT_SECRET: TEST_SETTINGS.clientSecret,
+  ACCESS_AUTHORIZATION_URL: TEST_SETTINGS.authorizationUrl,
+  ACCESS_TOKEN_URL: TEST_SETTINGS.tokenUrl,
+  ACCESS_JWKS_URL: TEST_SETTINGS.jwksUrl,
+  COOKIE_ENCRYPTION_KEY: TEST_SETTINGS.cookieKey,
+  ADMIN_EMAILS: "admin@example.com",
+};
+```
+
+and add `import type { AppSettings } from "../src/config";` only if the type is needed elsewhere in the file.
+
+- [ ] **Step 2: Create `tests/oauthFake.ts`**
+
+```ts
+import type { AuthRequest, ClientInfo, CompleteAuthorizationOptions } from "@cloudflare/workers-oauth-provider";
+
+export const KNOWN_CLIENT_ID = "known-client";
+export const CLIENT_REDIRECT = "https://client.example/callback";
+/** Deliberately hostile name: the consent page must escape it. */
+export const CLIENT_NAME = '<script>alert(1)</script> Agent';
+
+export type OAuthCalls = { completeAuthorization: CompleteAuthorizationOptions[] };
+
+/** A stand-in for the OAuth provider's helpers, so route tests need no real provider. */
+export function fakeOAuth(overrides: Record<string, unknown> = {}) {
+  const calls: OAuthCalls = { completeAuthorization: [] };
+  const helpers = {
+    async parseAuthRequest(request: Request): Promise<AuthRequest> {
+      const params = new URL(request.url).searchParams;
+      const clientId = params.get("client_id");
+      if (!clientId) throw new Error("missing client_id");
+      return {
+        responseType: params.get("response_type") ?? "code",
+        clientId,
+        redirectUri: params.get("redirect_uri") ?? CLIENT_REDIRECT,
+        scope: (params.get("scope") ?? "memory").split(" "),
+        state: params.get("state") ?? "",
+        codeChallenge: params.get("code_challenge") ?? undefined,
+        codeChallengeMethod: params.get("code_challenge_method") ?? undefined,
+      } as AuthRequest;
+    },
+    async lookupClient(clientId: string): Promise<ClientInfo | null> {
+      if (clientId !== KNOWN_CLIENT_ID) return null;
+      return { clientId, clientName: CLIENT_NAME, redirectUris: [CLIENT_REDIRECT] } as ClientInfo;
+    },
+    async completeAuthorization(options: CompleteAuthorizationOptions) {
+      calls.completeAuthorization.push(options);
+      return { redirectTo: `${CLIENT_REDIRECT}?code=issued-code&state=${options.request.state}` };
+    },
+    ...overrides,
+  };
+  return { helpers, calls };
+}
+```
+
+- [ ] **Step 3: Write the failing test `tests/auth-handler.test.ts`**
+
+```ts
+import { env } from "cloudflare:workers";
+import { describe, expect, it } from "vitest";
+import { createAuthHandler } from "../src/auth/handler";
+import { fakeFetch, idClaims, signJwt, TEST_ENV_SETTINGS, TEST_SETTINGS, testSigningKey } from "./authFixtures";
+import { CLIENT_REDIRECT, fakeOAuth, KNOWN_CLIENT_ID } from "./oauthFake";
+
+const ORIGIN = "https://memory.example.com";
+const NOW_SECONDS = 1_789_000_000;
+
+async function setup(options: { settings?: Record<string, string | undefined> } = {}) {
+  const key = await testSigningKey();
+  const oauth = fakeOAuth();
+  const fake = fakeFetch({
+    [TEST_SETTINGS.jwksUrl]: () => Response.json(key.jwks),
+    [TEST_SETTINGS.tokenUrl]: async () =>
+      Response.json({ id_token: await signJwt(key.privateKey, { alg: "RS256", kid: key.kid }, idClaims(NOW_SECONDS)) }),
+  });
+  const handler = createAuthHandler({ fetch: fake.fetch, now: () => NOW_SECONDS * 1000 });
+  const testEnv = { ...env, ...TEST_ENV_SETTINGS, ...options.settings, OAUTH_PROVIDER: oauth.helpers };
+  const call = (path: string, init?: RequestInit) =>
+    handler.fetch(new Request(`${ORIGIN}${path}`, init), testEnv as never);
+  return { call, oauth, fake, key };
+}
+
+function authorizeUrl(clientId = KNOWN_CLIENT_ID): string {
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: CLIENT_REDIRECT,
+    scope: "memory",
+    state: "client-state",
+  });
+  return `/authorize?${params}`;
+}
+
+function inputValue(html: string, name: string): string {
+  return new RegExp(`name="${name}" value="([^"]+)"`).exec(html)?.[1] ?? "";
+}
+
+function cookieValue(setCookie: string | null): string {
+  return setCookie?.split(";")[0] ?? "";
+}
+
+async function approveFlow(call: Awaited<ReturnType<typeof setup>>["call"]) {
+  const consent = await call(authorizeUrl());
+  const html = await consent.text();
+  const csrfCookie = cookieValue(consent.headers.get("set-cookie"));
+  const body = new URLSearchParams({
+    action: "approve",
+    consent_id: inputValue(html, "consent_id"),
+    csrf: inputValue(html, "csrf"),
+  });
+  return call("/authorize", {
+    method: "POST",
+    headers: { cookie: csrfCookie, "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+}
+
+describe("GET /authorize", () => {
+  it("shows a consent page with escaped client details and security headers", async () => {
+    const { call } = await setup();
+    const response = await call(authorizeUrl());
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("client.example");
+    expect(inputValue(html, "consent_id")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(inputValue(html, "csrf")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(response.headers.get("set-cookie")).toContain("__Host-kd_csrf=");
+    expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+  });
+
+  it("refuses an unregistered client", async () => {
+    const { call } = await setup();
+    expect((await call(authorizeUrl("stranger"))).status).toBe(400);
+  });
+
+  it("skips consent for a client this browser already approved", async () => {
+    const { call } = await setup();
+    const approved = await approveFlow(call);
+    const approvedCookie = (approved.headers.get("set-cookie") ?? "")
+      .split(",")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("__Host-kd_approved="));
+    const response = await call(authorizeUrl(), { headers: { cookie: cookieValue(approvedCookie ?? "") } });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location") ?? "").toContain(TEST_SETTINGS.authorizationUrl);
+  });
+});
+
+describe("POST /authorize", () => {
+  it("sends an approval to Access with PKCE and remembers the client", async () => {
+    const { call } = await setup();
+    const response = await approveFlow(call);
+    expect(response.status).toBe(302);
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.origin + location.pathname).toBe(TEST_SETTINGS.authorizationUrl);
+    expect(location.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(location.searchParams.get("state")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(location.searchParams.get("redirect_uri")).toBe(`${ORIGIN}/callback`);
+    const cookies = response.headers.get("set-cookie") ?? "";
+    expect(cookies).toContain("__Host-kd_approved=");
+    expect(cookies).toContain("__Host-kd_csrf=;");
+  });
+
+  it("refuses a form without a matching CSRF token", async () => {
+    const { call } = await setup();
+    const consent = await call(authorizeUrl());
+    const html = await consent.text();
+    const response = await call("/authorize", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "approve", consent_id: inputValue(html, "consent_id"), csrf: "wrong" }),
+    });
+    expect(response.status).toBe(403);
+  });
+
+  it("returns access_denied to the client when the person cancels", async () => {
+    const { call } = await setup();
+    const consent = await call(authorizeUrl());
+    const html = await consent.text();
+    const response = await call("/authorize", {
+      method: "POST",
+      headers: {
+        cookie: cookieValue(consent.headers.get("set-cookie")),
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        action: "deny",
+        consent_id: inputValue(html, "consent_id"),
+        csrf: inputValue(html, "csrf"),
+      }),
+    });
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(response.status).toBe(302);
+    expect(location.origin + location.pathname).toBe(CLIENT_REDIRECT);
+    expect(location.searchParams.get("error")).toBe("access_denied");
+    expect(location.searchParams.get("state")).toBe("client-state");
+  });
+
+  it("rejects a reused consent id", async () => {
+    const { call } = await setup();
+    const consent = await call(authorizeUrl());
+    const html = await consent.text();
+    const send = () =>
+      call("/authorize", {
+        method: "POST",
+        headers: {
+          cookie: cookieValue(consent.headers.get("set-cookie")),
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          action: "approve",
+          consent_id: inputValue(html, "consent_id"),
+          csrf: inputValue(html, "csrf"),
+        }),
+      });
+    expect((await send()).status).toBe(302);
+    expect((await send()).status).toBe(400);
+  });
+});
+
+describe("GET /callback", () => {
+  async function callbackFor(call: Awaited<ReturnType<typeof setup>>["call"]) {
+    const approved = await approveFlow(call);
+    const state = new URL(approved.headers.get("location") ?? "").searchParams.get("state") ?? "";
+    return { state, response: await call(`/callback?code=access-code&state=${state}`) };
+  }
+
+  it("verifies the ID token and completes authorization with the Access subject", async () => {
+    const { call, oauth } = await setup();
+    const { response } = await callbackFor(call);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location") ?? "").toContain("code=issued-code");
+    const [completed] = oauth.calls.completeAuthorization;
+    expect(completed?.userId).toBe("access-user-123");
+    expect(completed?.props).toMatchObject({
+      email: "alice@example.com",
+      sub: "access-user-123",
+      clientId: KNOWN_CLIENT_ID,
+    });
+    expect(JSON.stringify(completed?.props)).not.toContain("id_token");
+  });
+
+  it("rejects a replayed state", async () => {
+    const { call, oauth } = await setup();
+    const { state } = await callbackFor(call);
+    const replay = await call(`/callback?code=access-code&state=${state}`);
+    expect(replay.status).toBe(400);
+    expect(oauth.calls.completeAuthorization).toHaveLength(1);
+  });
+
+  it("refuses a token for another audience and never completes authorization", async () => {
+    const key = await testSigningKey();
+    const oauth = fakeOAuth();
+    const fake = fakeFetch({
+      [TEST_SETTINGS.jwksUrl]: () => Response.json(key.jwks),
+      [TEST_SETTINGS.tokenUrl]: async () =>
+        Response.json({
+          id_token: await signJwt(
+            key.privateKey,
+            { alg: "RS256", kid: key.kid },
+            idClaims(NOW_SECONDS, { aud: "another-app" }),
+          ),
+        }),
+    });
+    const handler = createAuthHandler({ fetch: fake.fetch, now: () => NOW_SECONDS * 1000 });
+    const testEnv = { ...env, ...TEST_ENV_SETTINGS, OAUTH_PROVIDER: oauth.helpers };
+    const call = (path: string, init?: RequestInit) =>
+      handler.fetch(new Request(`${ORIGIN}${path}`, init), testEnv as never);
+    const approved = await approveFlow(call);
+    const state = new URL(approved.headers.get("location") ?? "").searchParams.get("state") ?? "";
+    const response = await call(`/callback?code=access-code&state=${state}`);
+    expect(response.status).toBe(403);
+    expect(oauth.calls.completeAuthorization).toHaveLength(0);
+  });
+});
+
+describe("setup and unknown routes", () => {
+  it("explains which settings are missing without showing any value", async () => {
+    const { call } = await setup({ settings: { ACCESS_CLIENT_SECRET: undefined, ACCESS_JWKS_URL: undefined } });
+    const response = await call(authorizeUrl());
+    const html = await response.text();
+    expect(response.status).toBe(500);
+    expect(html).toContain("ACCESS_CLIENT_SECRET");
+    expect(html).toContain("ACCESS_JWKS_URL");
+    expect(html).not.toContain(TEST_SETTINGS.clientSecret);
+  });
+
+  it("returns 404 for anything else", async () => {
+    const { call } = await setup();
+    expect((await call("/nope")).status).toBe(404);
+  });
+});
+```
+
+- [ ] **Step 4: Run the test to verify it fails**
+
+Run: `npx vitest run tests/auth-handler.test.ts`
+Expected: FAIL, cannot find module `../src/auth/handler`.
+
+- [ ] **Step 5: Create `src/web/html.ts`**
+
+```ts
+const ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ESCAPES[char] ?? char);
+}
+
+/** Every page ships the same hardened headers: no scripts, no framing, no referrers. */
+export function htmlResponse(
+  html: string,
+  init: { status?: number; headers?: Record<string, string> } = {},
+): Response {
+  return new Response(html, {
+    status: init.status ?? 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "content-security-policy":
+        "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "x-frame-options": "DENY",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "cache-control": "no-store",
+      ...init.headers,
+    },
+  });
+}
+
+export const PAGE_STYLE = `
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 2rem 1rem; font: 16px/1.5 ui-sans-serif, system-ui, sans-serif;
+         background: #10161c; color: #e8edf2; display: flex; justify-content: center; }
+  main { width: 100%; max-width: 34rem; background: #161e26; border: 1px solid #243040;
+         border-radius: 14px; padding: 1.75rem; }
+  h1 { margin: 0 0 0.75rem; font-size: 1.35rem; }
+  p { margin: 0 0 1rem; color: #b9c6d4; }
+  ul { margin: 0 0 1.25rem 1.1rem; padding: 0; color: #b9c6d4; }
+  li { margin-bottom: 0.4rem; }
+  .target { font-family: ui-monospace, monospace; color: #e8edf2; }
+  .row { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+  button { font: inherit; padding: 0.6rem 1.1rem; border-radius: 9px; border: 1px solid #2c3a4c;
+           cursor: pointer; }
+  .approve { background: #2f6f4f; color: #f2fff8; border-color: #3c8a63; }
+  .cancel { background: transparent; color: #b9c6d4; }
+  .note { font-size: 0.9rem; color: #8ea0b2; }
+`;
+```
+
+- [ ] **Step 6: Create `src/auth/consent.ts`**
+
+```ts
+import { escapeHtml, htmlResponse, PAGE_STYLE } from "../web/html";
+
+export type ConsentOptions = {
+  clientName: string;
+  redirectHost: string;
+  consentId: string;
+  csrfToken: string;
+  csrfCookie: string;
+};
+
+/** The approval screen shown before a person is sent to Cloudflare Access. */
+export function renderConsent(options: ConsentOptions): Response {
+  const client = escapeHtml(options.clientName);
+  const host = escapeHtml(options.redirectHost);
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect ${client}</title>
+<style>${PAGE_STYLE}</style>
+</head>
+<body>
+<main>
+  <h1>Connect ${client}?</h1>
+  <p>This app is asking to use KeenDreams Security Memory as you.</p>
+  <ul>
+    <li>Read memory: facts, entities, history and pending proposals</li>
+    <li>Record evidence and propose facts, which stay unconfirmed until a reviewer approves them here in a browser</li>
+    <li>It cannot confirm, reject or roll back anything</li>
+  </ul>
+  <p class="note">After you approve, you sign in with your organization's Cloudflare Access.
+  Tokens are returned to <span class="target">${host}</span>.</p>
+  <form method="post" action="/authorize">
+    <input type="hidden" name="consent_id" value="${escapeHtml(options.consentId)}">
+    <input type="hidden" name="csrf" value="${escapeHtml(options.csrfToken)}">
+    <div class="row">
+      <button class="approve" type="submit" name="action" value="approve">Approve</button>
+      <button class="cancel" type="submit" name="action" value="deny">Cancel</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>`;
+  return htmlResponse(html, { headers: { "set-cookie": options.csrfCookie } });
+}
+
+export function messagePage(title: string, detail: string, status: number): Response {
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>${PAGE_STYLE}</style>
+</head>
+<body><main><h1>${escapeHtml(title)}</h1><p>${escapeHtml(detail)}</p></main></body>
+</html>`;
+  return htmlResponse(html, { status });
+}
+```
+
+- [ ] **Step 7: Create `src/auth/handler.ts`**
+
+```ts
+import type { AuthRequest, OAuthHelpers } from "@cloudflare/workers-oauth-provider";
+import { type AccessSettings, type AppSettings, readAccessSettings, SetupError } from "../config";
+import {
+  AccessError,
+  accessAuthorizeUrl,
+  exchangeCode,
+  type FetchLike,
+  pkcePair,
+  type UpstreamState,
+  verifyIdToken,
+} from "./access";
+import { messagePage, renderConsent } from "./consent";
+import {
+  approvedClients,
+  approvedClientsCookie,
+  CLEAR_CSRF_COOKIE,
+  csrfMatches,
+  newCsrfToken,
+} from "./cookies";
+import { putOnce, takeOnce } from "./onceStore";
+import type { AuthProps } from "./types";
+
+export type AuthEnv = Env & AppSettings & { OAUTH_PROVIDER: OAuthHelpers };
+export type AuthDeps = { fetch: FetchLike; now: () => number };
+
+const CONSENT_PREFIX = "consent";
+const UPSTREAM_PREFIX = "upstream";
+
+const DEFAULT_DEPS: AuthDeps = {
+  fetch: (url, init) => fetch(url, init),
+  now: () => Date.now(),
+};
+
+function redirect(location: string, cookies: string[] = []): Response {
+  const headers = new Headers({ location, "cache-control": "no-store" });
+  for (const cookie of cookies) headers.append("set-cookie", cookie);
+  return new Response(null, { status: 302, headers });
+}
+
+function callbackUri(request: Request): string {
+  return new URL("/callback", request.url).toString();
+}
+
+function setupPage(error: SetupError): Response {
+  return messagePage(
+    "Finish setting up this deployment",
+    `Add these settings as Worker secrets, then redeploy: ${error.missing.join(", ")}. The README's sign-in setup section lists where each value comes from.`,
+    500,
+  );
+}
+
+async function startAccessSignIn(
+  env: AuthEnv,
+  settings: AccessSettings,
+  request: Request,
+  oauthRequest: AuthRequest,
+  cookies: string[] = [],
+): Promise<Response> {
+  const { verifier, challenge } = await pkcePair();
+  const state = await putOnce<UpstreamState>(env.OAUTH_KV, UPSTREAM_PREFIX, {
+    oauthRequest,
+    codeVerifier: verifier,
+  });
+  const location = accessAuthorizeUrl(settings, {
+    redirectUri: callbackUri(request),
+    state,
+    challenge,
+  });
+  return redirect(location, cookies);
+}
+
+/**
+ * Browser routes for the OAuth provider's `defaultHandler`: the approval screen,
+ * the hop to Cloudflare Access, and the callback that issues this server's token.
+ */
+export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
+  return {
+    async fetch(request: Request, env: AuthEnv): Promise<Response> {
+      const url = new URL(request.url);
+      let settings: AccessSettings;
+      try {
+        settings = readAccessSettings(env);
+      } catch (error) {
+        if (error instanceof SetupError) return setupPage(error);
+        throw error;
+      }
+
+      if (url.pathname === "/authorize" && request.method === "GET") {
+        let oauthRequest: AuthRequest;
+        try {
+          oauthRequest = await env.OAUTH_PROVIDER.parseAuthRequest(request);
+        } catch {
+          return messagePage("This sign-in link is not valid", "Start again from your MCP client.", 400);
+        }
+        const client = await env.OAUTH_PROVIDER.lookupClient(oauthRequest.clientId);
+        if (!client) {
+          return messagePage("Unknown application", "This application is not registered here.", 400);
+        }
+        if ((await approvedClients(request, settings.cookieKey)).includes(client.clientId)) {
+          return startAccessSignIn(env, settings, request, oauthRequest);
+        }
+        const consentId = await putOnce<AuthRequest>(env.OAUTH_KV, CONSENT_PREFIX, oauthRequest);
+        const csrf = newCsrfToken();
+        return renderConsent({
+          clientName: client.clientName ?? client.clientId,
+          redirectHost: new URL(oauthRequest.redirectUri).host,
+          consentId,
+          csrfToken: csrf.token,
+          csrfCookie: csrf.cookie,
+        });
+      }
+
+      if (url.pathname === "/authorize" && request.method === "POST") {
+        const form = await request.formData();
+        if (!csrfMatches(request, form.get("csrf"))) {
+          return messagePage("This form expired", "Start the sign-in again from your MCP client.", 403);
+        }
+        const consentId = form.get("consent_id");
+        const oauthRequest = await takeOnce<AuthRequest>(
+          env.OAUTH_KV,
+          CONSENT_PREFIX,
+          typeof consentId === "string" ? consentId : null,
+        );
+        if (!oauthRequest) {
+          return messagePage("This approval expired", "Start the sign-in again from your MCP client.", 400);
+        }
+        if (form.get("action") !== "approve") {
+          const denied = new URL(oauthRequest.redirectUri);
+          denied.searchParams.set("error", "access_denied");
+          if (oauthRequest.state) denied.searchParams.set("state", oauthRequest.state);
+          return redirect(denied.toString(), [CLEAR_CSRF_COOKIE]);
+        }
+        const approved = await approvedClientsCookie(request, settings.cookieKey, oauthRequest.clientId);
+        return startAccessSignIn(env, settings, request, oauthRequest, [approved, CLEAR_CSRF_COOKIE]);
+      }
+
+      if (url.pathname === "/callback" && request.method === "GET") {
+        const upstream = await takeOnce<UpstreamState>(
+          env.OAUTH_KV,
+          UPSTREAM_PREFIX,
+          url.searchParams.get("state"),
+        );
+        if (!upstream) {
+          return messagePage("This sign-in link expired", "Start the sign-in again from your MCP client.", 400);
+        }
+        if (url.searchParams.get("error")) {
+          return messagePage("Sign-in was cancelled", "Nothing was connected.", 403);
+        }
+        try {
+          const idToken = await exchangeCode(deps.fetch, settings, {
+            code: url.searchParams.get("code") ?? "",
+            codeVerifier: upstream.codeVerifier,
+            redirectUri: callbackUri(request),
+          });
+          const claims = await verifyIdToken(
+            deps.fetch,
+            settings,
+            idToken,
+            Math.floor(deps.now() / 1000),
+          );
+          const client = await env.OAUTH_PROVIDER.lookupClient(upstream.oauthRequest.clientId);
+          const props: AuthProps = {
+            sub: claims.sub,
+            email: claims.email,
+            name: claims.name,
+            clientId: upstream.oauthRequest.clientId,
+            clientName: client?.clientName ?? upstream.oauthRequest.clientId,
+          };
+          const { redirectTo } = await env.OAUTH_PROVIDER.completeAuthorization({
+            request: upstream.oauthRequest,
+            userId: claims.sub,
+            metadata: { label: claims.email },
+            scope: upstream.oauthRequest.scope,
+            props,
+          });
+          return redirect(redirectTo);
+        } catch (error) {
+          if (error instanceof AccessError) {
+            console.error(error.message);
+            return messagePage("Sign-in failed", error.message, 403);
+          }
+          throw error;
+        }
+      }
+
+      return messagePage("Not found", "There is nothing at this address.", 404);
+    },
+  };
+}
+```
+
+- [ ] **Step 8: Run tests, typecheck and lint**
+
+Run: `npx vitest run tests/auth-handler.test.ts && npm run typecheck && npm run lint`
+Expected: 11 tests PASS; typecheck and lint exit 0 (run `npm run format` first if only formatting is reported).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/web/html.ts src/auth/consent.ts src/auth/handler.ts tests/oauthFake.ts tests/authFixtures.ts tests/auth-handler.test.ts
+git commit -m "Add consent screen and Access sign-in routes"
+```
+
 <!-- PLAN CONTINUES -->
