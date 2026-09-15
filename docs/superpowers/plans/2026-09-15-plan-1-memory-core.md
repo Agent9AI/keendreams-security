@@ -2867,7 +2867,7 @@ git commit -m "Add review decisions and audit rollback"
   - `type GraphQuery = { key: string; depth?: number; predicates?: string[] }`, `type GraphView = { root: string; depth: number; edges: FactView[]; truncated: boolean }`, `MAX_GRAPH_EDGES`, `exploreGraph(sql, query, now): GraphView`.
   - `type HistoryQuery = { factId?: string; subject?: string; predicate?: string; object?: string }`, `type AuditView`, `type HistoryView = { facts: FactView[]; audit: AuditView[] }`, `factHistory(sql, query): HistoryView`.
   - `type ProposalView = FactView & { evidence: { episodeId: string; source: string; quote: string; flags: string[] } }`, `EVIDENCE_QUOTE_CHARS`, `listProposals(sql, limit?): ProposalView[]`.
-  - RPC `ClientMemory.findFacts`, `getEntity`, `exploreGraph`, `factHistory`, `listProposals`. Plans 2 and 3 build `find_facts`, `get_entity`, `explore_graph`, `fact_history`, `list_proposals` and recall filtering on these.
+  - RPC `ClientMemory.findFacts`, `getEntity`, `exploreGraph`, `factHistory`, `listProposals`. RPC results must be structured-clone serializable, so `AuditView.detail` is JSON text, not `Record<string, unknown>` (which types the RPC result as `never`). Plans 2 and 3 build `find_facts`, `get_entity`, `explore_graph`, `fact_history`, `list_proposals` and recall filtering on these.
 
 - [ ] **Step 1: Write the failing test `tests/queries.test.ts`**
 
@@ -3338,7 +3338,8 @@ export type AuditView = {
   actor: string;
   action: string;
   target: string;
-  detail: Record<string, unknown>;
+  /** Raw JSON text of the audit detail; RPC results must be serializable. */
+  detail: string;
 };
 
 export type HistoryView = { facts: FactView[]; audit: AuditView[] };
@@ -3380,8 +3381,7 @@ export function factHistory(sql: SqlStorage, query: HistoryQuery): HistoryView {
        WHERE target IN (${ids.map(() => "?").join(", ")}) ORDER BY seq ASC`,
       ...ids,
     )
-    .toArray()
-    .map((row) => ({ ...row, detail: JSON.parse(row.detail) as Record<string, unknown> }));
+    .toArray();
   return { facts, audit };
 }
 
@@ -3423,14 +3423,14 @@ import type { FactOrigin } from "../policy/trust";
 import { type ChainCheck, verifyAuditChain } from "./audit";
 import { recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
-import type { FactView } from "./factView";
 import { assertFact } from "./facts";
+import type { FactView } from "./factView";
 import { DEFAULT_WRITES_PER_MINUTE } from "./limits";
 import {
   type EntityView,
   exploreGraph,
-  factHistory,
   type FindFactsQuery,
+  factHistory,
   findFacts,
   type GraphQuery,
   type GraphView,
