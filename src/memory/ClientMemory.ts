@@ -4,7 +4,22 @@ import { type ChainCheck, verifyAuditChain } from "./audit";
 import { recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
 import { assertFact } from "./facts";
+import type { FactView } from "./factView";
 import { DEFAULT_WRITES_PER_MINUTE } from "./limits";
+import {
+  type EntityView,
+  exploreGraph,
+  type FindFactsQuery,
+  factHistory,
+  findFacts,
+  type GraphQuery,
+  type GraphView,
+  getEntity,
+  type HistoryQuery,
+  type HistoryView,
+  listProposals,
+  type ProposalView,
+} from "./queries";
 import { confirmFact, rejectFact, rollbackTo } from "./review";
 import { migrate } from "./schema";
 import type {
@@ -69,6 +84,26 @@ export class ClientMemory extends DurableObject<Env> {
   rollbackTo(reviewerEmail: string, toSeq: number): RollbackResult {
     const ctx = this.reviewContext(reviewerEmail);
     return this.ctx.storage.transactionSync(() => rollbackTo(this.sql, ctx, toSeq));
+  }
+
+  findFacts(query: FindFactsQuery = {}): FactView[] {
+    return findFacts(this.sql, query, new Date().toISOString());
+  }
+
+  getEntity(key: string): EntityView {
+    return getEntity(this.sql, key, new Date().toISOString());
+  }
+
+  exploreGraph(query: GraphQuery): GraphView {
+    return exploreGraph(this.sql, query, new Date().toISOString());
+  }
+
+  factHistory(query: HistoryQuery): HistoryView {
+    return factHistory(this.sql, query);
+  }
+
+  listProposals(limit?: number): ProposalView[] {
+    return listProposals(this.sql, limit);
   }
 
   verifyAuditChain(): ChainCheck {
