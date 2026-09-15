@@ -1,10 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
+import type { FactOrigin } from "../policy/trust";
 import { type ChainCheck, verifyAuditChain } from "./audit";
 import { recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
+import { assertFact } from "./facts";
 import { DEFAULT_WRITES_PER_MINUTE } from "./limits";
 import { migrate } from "./schema";
 import type {
+  AssertFactInput,
+  AssertFactResult,
   Principal,
   RecordEpisodeInput,
   RecordEpisodeResult,
@@ -32,6 +36,19 @@ export class ClientMemory extends DurableObject<Env> {
   ): RecordEpisodeResult {
     const ctx = this.writeContext(principal, options);
     return this.ctx.storage.transactionSync(() => recordEpisode(this.sql, ctx, input));
+  }
+
+  /** `origin` is decided by the Worker from the Registry allowlist, never by the MCP caller. */
+  assertFact(
+    principal: Principal,
+    input: AssertFactInput,
+    origin: FactOrigin = "mcp",
+    options: WriteOptions = {},
+  ): AssertFactResult {
+    const ctx = this.writeContext(principal, options);
+    return this.ctx.storage.transactionSync(() =>
+      assertFact(this.sql, ctx, input, origin, options.suggestedByModel ?? null),
+    );
   }
 
   verifyAuditChain(): ChainCheck {
