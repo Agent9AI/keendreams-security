@@ -1,7 +1,7 @@
 # KeenDreams Security Memory: Design
 
 - **Date:** 2026-09-15
-- **Status:** Design approved section by section; written spec pending owner review
+- **Status:** Design approved section by section, including the business layer (section 15)
 - **Repo:** `Agent9AI/keendreams-security` (MIT)
 - **Listing target:** Tenable CyberAgents Exchange, MCP server listing
 
@@ -401,7 +401,9 @@ No component sends data to the project authors.
   `Cloudflare` to `validator.py` in the same PR.
 - `works_with_tenable_hexa_mcp: true` only after section 9 passes against a live
   Tenable One instance.
-- One listing file per PR. A separate skill listing is optional and later.
+- `cta: "T1"` (the validator requires `works_with_tenable_hexa_mcp: true`).
+- `domains: ["vulnerability-management", "ai-security"]` (1 to 2 values; the first is primary).
+- One listing file per PR. The skill listing follows once the first merges (section 15.B).
 - The submission builder detects MCP fields by string matching, so the README
   states transport, auth method and tools explicitly.
 
@@ -411,7 +413,8 @@ No component sends data to the project authors.
 2. Build from the implementation plan.
 3. Verify with a manual deploy while private. Make the repo public, then verify
    the Deploy button and the Hexa recipe.
-4. Run the CyberAgents Exchange submission builder. The owner accepts the
+4. Pre-submission review (section 15.G); the owner reviews the result.
+5. Run the CyberAgents Exchange submission builder. The owner accepts the
    Contribution Agreement; the PR is opened only with owner approval.
 
 ## 14. Build-time verifications
@@ -423,3 +426,91 @@ No component sends data to the project authors.
 | Hexa MCP read-only tool names | Captured from live `tools/list`; skill lists only confirmed read tools |
 | Workers AI model reliably returns schema-valid JSON for `suggest_facts` | Try another model; ship `suggest_facts` disabled by default if none qualifies |
 | Claude Desktop remote OAuth connection works | Omit Claude Desktop from `compatible_clients` |
+
+## 15. Business layer
+
+**Goal:** the listing sends qualified leads to Agent9.dev without bending exchange
+rules or user trust.
+
+### 15.A Offer and call to action
+
+- **Offer:** an Agent9.dev deploy and integrate package. Agent9 deploys into the
+  client's own Cloudflare account, configures Access for SaaS and reviewers,
+  connects the Hexa recipe to the client's Tenable One, and trains analysts and
+  reviewers.
+- **One call to action** in the README, near the top and at the end, linking to a
+  dedicated agent9.dev package page with
+  `utm_source=github&utm_medium=readme&utm_campaign=keendreams-security`.
+- **Listing bodies stay factual.** No sales copy on the exchange.
+- **No telemetry.** No component makes any call to Agent9. Measurement uses UTM
+  tags, GitHub traffic data and agent9.dev analytics.
+
+### 15.B Listings
+
+| Order | Type | File | Key fields |
+|-------|------|------|------------|
+| 1 | MCP server | `mcp-servers/keendreams-security-memory.md` | `works_with_tenable_hexa_mcp: true`, `cta: "T1"`, `domains: ["vulnerability-management", "ai-security"]` |
+| 2 | Skill | `skills/keendreams-hexa-to-memory.md` | Same repo (root `SKILL.md`), same stars on a second leaderboard; opened after listing 1 merges |
+| 3 | Playbook | `playbooks/…` | Later: Hexa AI MCP, KeenDreams memory and a triage agent in one chain |
+
+With `cta: "T1"` the listing page shows a "Powered by Hexa AI" banner and a
+"Request a Demo" link to Tenable One, which aligns the listing with Tenable's own
+funnel. It is only set once the Hexa recipe passes against a live Tenable One
+instance.
+
+### 15.C Launch and star momentum
+
+- Leaderboard rank is raw GitHub stars. "Rising" marks the top 20% by stars per day
+  among listings 90 days old or younger, so promotion is front-loaded into the
+  first weeks.
+- The launch kit is ready before listing 1 merges: README hero image, a
+  90-second demo video, LinkedIn and X posts, and a week-one list of people to ask
+  for stars.
+- After publishing, run the community promoter flow (Tenable intake form and
+  recording studio). Copy follows Tenable brand rules: "Tenable One" and "Hexa AI"
+  written exactly, never implying Tenable endorsement. No em-dashes in any copy.
+
+### 15.D Two-minute evaluation
+
+- `npm run demo` seeds a synthetic scenario on a local `wrangler dev`: fake assets
+  and CVEs, an accepted risk that expires, and a memory-poisoning attempt that lands
+  as proposed and flagged.
+- Demo mode runs only when `DEMO_MODE=1` is set in `.dev.vars` **and** the request
+  host is `localhost` or `127.0.0.1`. `wrangler.jsonc` never sets it, and a test
+  proves a non-local request is refused.
+- `/review` and `/admin` get a polished UI; the README shows screenshots and a
+  short GIF.
+- `docs/memory-poisoning-defense.md` maps each control to the OWASP ASI06 defense
+  layers.
+
+### 15.E Trust signals
+
+`SECURITY.md` (disclosure policy), `docs/threat-model.md`, OpenSSF Scorecard
+workflow and badge, CodeQL, Dependabot, CI and secret-scan badges, and tagged
+releases.
+
+### 15.F agent9.dev package page
+
+Drafted in the agent9.dev CMS as a draft; the owner publishes it. No customer
+names, logos, "trusted by" claims or timing numbers until they are real and
+measured.
+
+### 15.G Pre-submission review (Plan 6)
+
+1. High-effort code review and a security review of the whole repo.
+2. The community adversarial pre-submission quality review skill.
+3. The exchange `validator.py` run locally against each listing file.
+4. Deploy to Cloudflare button test in a fresh account.
+5. Live Hexa recipe test against Tenable One.
+6. Owner review; the owner decides on the official PR.
+
+### 15.H Plan sequence
+
+| Plan | Scope |
+|------|-------|
+| 1 | Memory core (done) |
+| 2 | MCP server, OAuth sign-in with Access for SaaS, Registry |
+| 3 | Search (FTS5 and Vectorize), vector queue, `suggest_facts` |
+| 4 | `/review` and `/admin` UI, demo mode |
+| 5 | Hexa recipe skill, README, Deploy button, trust signals, agent9.dev draft, launch kit |
+| 6 | Pre-submission review |
