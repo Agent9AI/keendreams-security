@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Node.js 22 or later; `"type": "module"`.
-- Exact dev dependency versions: `wrangler@4.132.0`, `typescript@5.9.3`, `vitest@4.1.11`, `@cloudflare/vitest-plugin@1.1.10`, `@biomejs/biome@2.5.13`, `@types/node@22`.
+- Exact dev dependency versions: `vite@7.3.6`, `wrangler@4.132.0`, `typescript@5.9.3`, `vitest@4.1.11`, `@cloudflare/vitest-plugin@1.1.10`, `@biomejs/biome@2.5.13`, `@types/node@22`. Vite is also pinned through `overrides` so npm 10 can install the tree (see Task 1).
 - `compatibility_date: "2026-09-01"`, `compatibility_flags: ["nodejs_compat"]`.
 - `package.json` has `"license": "MIT"` and `"private": true`.
 - Every code file stays under 500 lines.
@@ -86,14 +86,19 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run"
+  },
+  "overrides": {
+    "vite": "7.3.6"
   }
 }
 ```
 
+The `vite` override is required. Vitest 4 accepts Vite 8, whose optional `@vitejs/devtools` peer depends on `@vitejs/devtools-vitest`, which peers on `vitest@*` and pulls Vitest 5. npm 10 (bundled with Node 22, and 10.9.2 in Cloudflare Workers Builds) crashes on that loop with `Cannot read properties of null (reading 'edgesOut')`. Pinning every Vite to 7.3.6 removes the loop. Drop the pin when moving to Vitest 5.
+
 - [ ] **Step 2: Install exact dev dependencies**
 
-Run: `npm install -D --save-exact wrangler@4.132.0 typescript@5.9.3 vitest@4.1.11 @cloudflare/vitest-plugin@1.1.10 @biomejs/biome@2.5.13 @types/node@22`
-Expected: `package-lock.json` created; `devDependencies` lists the six packages with exact versions.
+Run: `npm install -D --save-exact vite@7.3.6 wrangler@4.132.0 typescript@5.9.3 vitest@4.1.11 @cloudflare/vitest-plugin@1.1.10 @biomejs/biome@2.5.13 @types/node@22`
+Expected: `package-lock.json` created; `devDependencies` lists the seven packages with exact versions; `npm ls vite` shows only `vite@7.3.6`.
 
 - [ ] **Step 3: Create `wrangler.jsonc`**
 
@@ -163,7 +168,7 @@ export default {
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "includes": ["**", "!worker-configuration.d.ts"] },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
-  "linter": { "enabled": true, "rules": { "recommended": true } }
+  "linter": { "enabled": true, "rules": { "preset": "recommended" } }
 }
 ```
 
