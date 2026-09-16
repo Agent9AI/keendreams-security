@@ -128,6 +128,20 @@ describe("recordEpisode", () => {
   });
 });
 
+describe("episodeMeta", () => {
+  it("reports who recorded an episode and the source they declared", async () => {
+    const memory = freshMemory();
+    const result = await memory.recordEpisode(ALICE, { content: "scan output", source: "nessus" });
+    expect(await memory.episodeMeta(result.episodeId)).toEqual({
+      episodeId: result.episodeId,
+      source: "nessus",
+      principalEmail: "alice@example.com",
+      oauthClientId: "client-alice",
+    });
+    expect(await memory.episodeMeta("missing")).toBeNull();
+  });
+});
+
 describe("splitParts", () => {
   it("never splits a surrogate pair", () => {
     const text = `${"a".repeat(EPISODE_PART_CHARS - 1)}\u{1F600}b`;

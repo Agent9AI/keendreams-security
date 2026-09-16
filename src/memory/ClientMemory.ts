@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { FactOrigin } from "../policy/trust";
 import { type ChainCheck, verifyAuditChain } from "./audit";
-import { recordEpisode } from "./episodes";
+import { type EpisodeMeta, episodeMeta, recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
 import { assertFact } from "./facts";
 import type { FactView } from "./factView";
@@ -104,6 +104,10 @@ export class ClientMemory extends DurableObject<Env> {
 
   listProposals(limit?: number): ProposalView[] {
     return listProposals(this.sql, limit);
+  }
+
+  episodeMeta(episodeId: string): EpisodeMeta | null {
+    return episodeMeta(this.sql, episodeId);
   }
 
   verifyAuditChain(): ChainCheck {

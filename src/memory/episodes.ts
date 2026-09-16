@@ -122,3 +122,28 @@ export function recordEpisode(
     auditSeq,
   };
 }
+
+export type EpisodeMeta = {
+  episodeId: string;
+  source: string;
+  principalEmail: string;
+  oauthClientId: string;
+};
+
+/** Who recorded an episode and what source they declared. Used to decide trust. */
+export function episodeMeta(sql: SqlStorage, episodeId: string): EpisodeMeta | null {
+  const row = sql
+    .exec<{ id: string; source: string; principal_email: string; oauth_client_id: string }>(
+      "SELECT id, source, principal_email, oauth_client_id FROM episodes WHERE id = ? AND part_of IS NULL",
+      String(episodeId ?? ""),
+    )
+    .toArray()[0];
+  return row
+    ? {
+        episodeId: row.id,
+        source: row.source,
+        principalEmail: row.principal_email,
+        oauthClientId: row.oauth_client_id,
+      }
+    : null;
+}
