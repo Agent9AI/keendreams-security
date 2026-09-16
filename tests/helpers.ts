@@ -2,6 +2,7 @@ import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import type { ClientMemory } from "../src/memory/ClientMemory";
 import type { Principal, WriteContext } from "../src/memory/types";
+import type { Registry } from "../src/registry/registry";
 
 export const ALICE: Principal = {
   email: "alice@example.com",
@@ -18,6 +19,11 @@ export const SYNC_BOT: Principal = {
 /** A new, empty client database per call, so tests never share state. */
 export function freshMemory(): DurableObjectStub<ClientMemory> {
   return env.CLIENT_MEMORY.getByName(`test-${crypto.randomUUID()}`);
+}
+
+/** A new, empty Registry per call. */
+export function freshRegistry(): DurableObjectStub<Registry> {
+  return env.REGISTRY.getByName(`registry-test-${crypto.randomUUID()}`);
 }
 
 /** Run code inside the Durable Object with direct access to its SQLite handle. */

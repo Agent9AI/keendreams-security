@@ -51,6 +51,9 @@
       },
       "CLIENT_MEMORY": {
         "description": "One private SQLite database per client."
+      },
+      "REGISTRY": {
+        "description": "Who may use which client, who reviews, and which automation sources are trusted."
       }
     }
   },

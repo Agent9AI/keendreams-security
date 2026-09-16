@@ -1,3 +1,5 @@
+import { AUDIT_SCHEMA } from "./audit";
+
 const V1: readonly string[] = [
   `CREATE TABLE episodes (
     id TEXT PRIMARY KEY,
@@ -57,18 +59,7 @@ const V1: readonly string[] = [
     added_at TEXT NOT NULL,
     PRIMARY KEY (fact_id, episode_id)
   )`,
-  `CREATE TABLE audit_log (
-    seq INTEGER PRIMARY KEY,
-    at TEXT NOT NULL,
-    actor TEXT NOT NULL,
-    action TEXT NOT NULL,
-    target TEXT NOT NULL,
-    detail TEXT NOT NULL,
-    prev_hash TEXT NOT NULL,
-    row_hash TEXT NOT NULL
-  )`,
-  "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END",
-  "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END",
+  ...AUDIT_SCHEMA,
   "CREATE VIRTUAL TABLE fts USING fts5(kind UNINDEXED, ref_id UNINDEXED, text)",
   `CREATE TABLE write_counters (
     principal TEXT PRIMARY KEY,
@@ -88,10 +79,11 @@ export function schemaVersion(sql: SqlStorage): number {
   return row ? Number(row.value) : 0;
 }
 
-export function migrate(sql: SqlStorage): number {
+/** Runs every migration version newer than the database's recorded version. */
+export function runMigrations(sql: SqlStorage, migrations: readonly (readonly string[])[]): number {
   let version = schemaVersion(sql);
-  while (version < MIGRATIONS.length) {
-    for (const statement of MIGRATIONS[version] ?? []) {
+  while (version < migrations.length) {
+    for (const statement of migrations[version] ?? []) {
       sql.exec(statement);
     }
     version += 1;
@@ -101,4 +93,8 @@ export function migrate(sql: SqlStorage): number {
     );
   }
   return version;
+}
+
+export function migrate(sql: SqlStorage): number {
+  return runMigrations(sql, MIGRATIONS);
 }

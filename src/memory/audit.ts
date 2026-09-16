@@ -1,5 +1,21 @@
 import { createHash } from "node:crypto";
 
+/** Audit table and append-only triggers, shared by every database that keeps an audit log. */
+export const AUDIT_SCHEMA: readonly string[] = [
+  `CREATE TABLE audit_log (
+    seq INTEGER PRIMARY KEY,
+    at TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target TEXT NOT NULL,
+    detail TEXT NOT NULL,
+    prev_hash TEXT NOT NULL,
+    row_hash TEXT NOT NULL
+  )`,
+  "CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END",
+  "CREATE TRIGGER audit_log_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END",
+];
+
 export const GENESIS_HASH = "0".repeat(64);
 
 export type AuditEntry = {

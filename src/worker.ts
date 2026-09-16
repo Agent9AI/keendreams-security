@@ -1,4 +1,5 @@
 export { ClientMemory } from "./memory/ClientMemory";
+export { Registry } from "./registry/registry";
 
 export default {
   async fetch(): Promise<Response> {

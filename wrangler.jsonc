@@ -7,7 +7,13 @@
   "observability": { "enabled": true },
   "kv_namespaces": [{ "binding": "OAUTH_KV" }],
   "durable_objects": {
-    "bindings": [{ "name": "CLIENT_MEMORY", "class_name": "ClientMemory" }]
+    "bindings": [
+      { "name": "CLIENT_MEMORY", "class_name": "ClientMemory" },
+      { "name": "REGISTRY", "class_name": "Registry" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ClientMemory"] }]
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ClientMemory"] },
+    { "tag": "v2", "new_sqlite_classes": ["Registry"] }
+  ]
 }
