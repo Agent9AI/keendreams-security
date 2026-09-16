@@ -3398,4 +3398,268 @@ git add src/memory/episodes.ts src/memory/ClientMemory.ts src/mcp tests/mcpFixtu
 git commit -m "Expose the memory core as MCP tools with client resolution and trusted sources"
 ```
 
-<!-- PLAN CONTINUES -->
+---
+
+### Task 6: Worker wiring and the end-to-end test
+
+**Files:**
+- Modify: `src/worker.ts`
+- Create: `tests/e2e.test.ts`
+
+**Interfaces:**
+- Consumes: `createAuthHandler` (Task 4), `mcpApiHandler` (Task 5), `ClientMemory` (Plan 1), `Registry` (Task 2).
+- Produces: `oauthOptions: OAuthProviderOptions<Env>` (exported so tests can build the same helpers with `getOAuthApi`), and the Worker's default export.
+
+- [ ] **Step 1: Replace `src/worker.ts`**
+
+```ts
+import OAuthProvider, { type OAuthProviderOptions } from "@cloudflare/workers-oauth-provider";
+import { type AuthEnv, createAuthHandler } from "./auth/handler";
+import { mcpApiHandler } from "./mcp/server";
+
+export { ClientMemory } from "./memory/ClientMemory";
+export { Registry } from "./registry/Registry";
+
+const DAY_SECONDS = 24 * 60 * 60;
+const authHandler = createAuthHandler();
+
+/**
+ * The OAuth provider owns the token endpoints and guards `/mcp`; everything else
+ * (the consent screen, the Access hop, the callback) is the auth handler's.
+ * Exported so tests can build the same helpers with `getOAuthApi`.
+ */
+export const oauthOptions: OAuthProviderOptions<Env> = {
+  apiRoute: "/mcp",
+  apiHandler: mcpApiHandler,
+  defaultHandler: {
+    fetch: (request, env) => authHandler.fetch(request, env as AuthEnv),
+  },
+  authorizeEndpoint: "/authorize",
+  tokenEndpoint: "/token",
+  clientRegistrationEndpoint: "/register",
+  scopesSupported: ["memory"],
+  accessTokenTTL: 3600,
+  refreshTokenTTL: 30 * DAY_SECONDS,
+};
+
+export default new OAuthProvider(oauthOptions);
+```
+
+- [ ] **Step 2: Write the failing test `tests/e2e.test.ts`**
+
+```ts
+import { getOAuthApi } from "@cloudflare/workers-oauth-provider";
+import { reset, SELF } from "cloudflare:test";
+import { env } from "cloudflare:workers";
+import { afterEach, describe, expect, it } from "vitest";
+import { pkcePair } from "../src/auth/access";
+import type { AuthProps } from "../src/auth/types";
+import { oauthOptions } from "../src/worker";
+
+const ORIGIN = "https://memory.example.com";
+const CLIENT_REDIRECT = "https://client.example/callback";
+
+const ANALYST: AuthProps = {
+  sub: "access-user-1",
+  email: "alice@example.com",
+  name: "Alice Analyst",
+  clientId: "placeholder",
+  clientName: "Claude Code",
+};
+
+afterEach(async () => {
+  await reset();
+});
+
+/** Walks the real OAuth flow, standing in for the Access hop, and returns a bearer token. */
+async function signIn(): Promise<string> {
+  const api = getOAuthApi(oauthOptions as never, env);
+  const client = await api.createClient({
+    redirectUris: [CLIENT_REDIRECT],
+    clientName: "Claude Code",
+    tokenEndpointAuthMethod: "none",
+  } as never);
+  const { verifier, challenge } = await pkcePair();
+  const authorizeUrl = new URL(`${ORIGIN}/authorize`);
+  authorizeUrl.search = new URLSearchParams({
+    response_type: "code",
+    client_id: client.clientId,
+    redirect_uri: CLIENT_REDIRECT,
+    scope: "memory",
+    state: "client-state",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+  }).toString();
+
+  const authRequest = await api.parseAuthRequest(new Request(authorizeUrl));
+  const { redirectTo } = await api.completeAuthorization({
+    request: authRequest,
+    userId: ANALYST.sub,
+    metadata: { label: ANALYST.email },
+    scope: authRequest.scope,
+    props: { ...ANALYST, clientId: client.clientId },
+  });
+  const code = new URL(redirectTo).searchParams.get("code") ?? "";
+
+  const tokenResponse = await SELF.fetch(`${ORIGIN}/token`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: CLIENT_REDIRECT,
+      client_id: client.clientId,
+      code_verifier: verifier,
+    }),
+  });
+  expect(tokenResponse.status).toBe(200);
+  const tokens = (await tokenResponse.json()) as { access_token: string };
+  return tokens.access_token;
+}
+
+async function mcp(token: string, method: string, params: Record<string, unknown>) {
+  const response = await SELF.fetch(`${ORIGIN}/mcp`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  expect(response.status).toBe(200);
+  const body = await response.text();
+  const line = body.split("\n").find((entry) => entry.startsWith("data: "));
+  const envelope = JSON.parse((line ?? "data: {}").slice(6)) as {
+    result?: { content?: { text: string }[]; tools?: { name: string }[]; isError?: boolean };
+  };
+  const text = envelope.result?.content?.[0]?.text ?? "";
+  return {
+    tools: envelope.result?.tools ?? [],
+    isError: envelope.result?.isError === true,
+    text,
+    data: text && !envelope.result?.isError ? (JSON.parse(text) as Record<string, unknown>) : null,
+  };
+}
+
+describe("discovery and sign-in", () => {
+  it("tells an MCP client where to sign in", async () => {
+    const response = await SELF.fetch(`${ORIGIN}/mcp`, { method: "POST", body: "{}" });
+    expect(response.status).toBe(401);
+    expect(response.headers.get("www-authenticate") ?? "").toContain("resource_metadata=");
+  });
+
+  it("publishes authorization server metadata with a registration endpoint", async () => {
+    const response = await SELF.fetch(`${ORIGIN}/.well-known/oauth-authorization-server`);
+    expect(response.status).toBe(200);
+    const metadata = (await response.json()) as Record<string, string>;
+    expect(metadata.token_endpoint).toBe(`${ORIGIN}/token`);
+    expect(metadata.registration_endpoint).toBe(`${ORIGIN}/register`);
+  });
+
+  it("lets a client register itself", async () => {
+    const response = await SELF.fetch(`${ORIGIN}/register`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        client_name: "Claude Code",
+        redirect_uris: [CLIENT_REDIRECT],
+        token_endpoint_auth_method: "none",
+      }),
+    });
+    expect([200, 201]).toContain(response.status);
+    const client = (await response.json()) as { client_id?: string };
+    expect(client.client_id).toBeTruthy();
+  });
+});
+
+describe("signed-in MCP session", () => {
+  it("records evidence, proposes a fact and reads it back", async () => {
+    const token = await signIn();
+
+    const tools = await mcp(token, "tools/list", {});
+    expect(tools.tools.map((tool) => tool.name)).toContain("record_episode");
+
+    const episode = await mcp(token, "tools/call", {
+      name: "record_episode",
+      arguments: { content: "Nessus plugin 201455 on web-prod-03", source: "nessus" },
+    });
+    const episodeId = String(episode.data?.episodeId ?? "");
+    expect(episodeId).not.toBe("");
+
+    const fact = await mcp(token, "tools/call", {
+      name: "assert_fact",
+      arguments: {
+        subject: "asset:web-prod-03",
+        predicate: "HAS_VULN",
+        object: "cve:CVE-2026-1234",
+        evidence_episode_id: episodeId,
+      },
+    });
+    expect(fact.data).toMatchObject({ status: "proposed", confidenceLabel: "UNCONFIRMED" });
+
+    const found = await mcp(token, "tools/call", {
+      name: "find_facts",
+      arguments: { status: "proposed" },
+    });
+    expect(found.data?.count).toBe(1);
+  });
+
+  it("refuses a token that was revoked", async () => {
+    const token = await signIn();
+    const api = getOAuthApi(oauthOptions as never, env);
+    const clients = await api.listClients();
+    for (const client of clients.items) {
+      await api.deleteClient(client.clientId);
+    }
+    const response = await SELF.fetch(`${ORIGIN}/mcp`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+    expect(response.status).toBe(401);
+  });
+});
+```
+
+- [ ] **Step 3: Run the end-to-end test**
+
+Run: `npx vitest run tests/e2e.test.ts`
+Expected: 5 tests PASS. If `listClients` paginates differently, adjust only the revocation test's loop, never the assertions about status codes.
+
+- [ ] **Step 4: Run everything**
+
+Run: `npm test && npm run typecheck && npm run lint && gitleaks git --redact .`
+Expected: every test PASS; typecheck and lint exit 0; gitleaks reports `no leaks found`.
+
+- [ ] **Step 5: Check file sizes**
+
+Run: `wc -l src/*.ts src/*/*.ts tests/*.ts | sort -n | tail -6`
+Expected: no file over 500 lines.
+
+- [ ] **Step 6: Commit and push**
+
+```bash
+git add src/worker.ts tests/e2e.test.ts
+git commit -m "Wire the OAuth provider, MCP endpoint and sign-in routes together"
+git push
+```
+
+- [ ] **Step 7: Confirm CI is green**
+
+Run: `gh run list --repo Agent9AI/keendreams-security --limit 4`
+Expected: the latest `CI` and `Secret scan` runs for the pushed commit show `completed success`.
+
+---
+
+## What Plan 2 deliberately leaves open
+
+- **The live Access check (Task 3, Step 9)** must pass before this is deployed for real. Everything here is proven against a fake Access that matches Cloudflare's documented endpoint shapes.
+- **`/review` and `/admin` do not exist yet** (Plan 4), so nothing can be confirmed or rejected, and the mode, clients, members and allowlist are set through Registry RPC in tests only.
+- **`recall` and `suggest_facts` come in Plan 3**, with Vectorize and Workers AI.
+- **The first real deploy** (manual `wrangler deploy` while the repo is private) belongs to Plan 5, together with the README, the Deploy button and the Hexa recipe skill.
+
