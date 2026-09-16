@@ -14,6 +14,17 @@ export const TEST_SETTINGS: AccessSettings = {
   cookieKey: "c".repeat(64),
 };
 
+/** The same values as `TEST_SETTINGS`, in the shape the Worker reads from its environment. */
+export const TEST_ENV_SETTINGS = {
+  ACCESS_CLIENT_ID: TEST_SETTINGS.clientId,
+  ACCESS_CLIENT_SECRET: TEST_SETTINGS.clientSecret,
+  ACCESS_AUTHORIZATION_URL: TEST_SETTINGS.authorizationUrl,
+  ACCESS_TOKEN_URL: TEST_SETTINGS.tokenUrl,
+  ACCESS_JWKS_URL: TEST_SETTINGS.jwksUrl,
+  COOKIE_ENCRYPTION_KEY: TEST_SETTINGS.cookieKey,
+  ADMIN_EMAILS: "admin@example.com",
+};
+
 /** A fresh RSA signing key and matching JWKS, generated per test run. */
 export async function testSigningKey(kid = "test-key") {
   const pair = (await crypto.subtle.generateKey(
