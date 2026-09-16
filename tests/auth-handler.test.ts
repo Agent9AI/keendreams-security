@@ -250,7 +250,8 @@ describe("setup and unknown routes", () => {
     });
     const response = await call(authorizeUrl());
     const html = await response.text();
-    expect(response.status).toBe(500);
+    // 503, not 500: the deployment works, it is just not configured yet.
+    expect(response.status).toBe(503);
     expect(html).toContain("ACCESS_CLIENT_SECRET");
     expect(html).toContain("ACCESS_JWKS_URL");
     expect(html).not.toContain(TEST_SETTINGS.clientSecret);

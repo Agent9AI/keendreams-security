@@ -1,7 +1,14 @@
 import type { AuthRequest, OAuthHelpers } from "@cloudflare/workers-oauth-provider";
-import { type AccessSettings, type AppSettings, readAccessSettings, SetupError } from "../config";
+import {
+  type AccessSettings,
+  type AppSettings,
+  readAccessSettings,
+  SETTING_NAMES,
+  SetupError,
+} from "../config";
 import { DEMO_IDENTITY, demoCookieKey, isDemoMode } from "../web/demo";
 import { reviewResponse } from "../web/review";
+import { setupPage } from "../web/setup";
 import {
   AccessError,
   accessAuthorizeUrl,
@@ -42,14 +49,6 @@ function redirect(location: string, cookies: string[] = []): Response {
 
 function callbackUri(request: Request): string {
   return new URL("/callback", request.url).toString();
-}
-
-function setupPage(error: SetupError): Response {
-  return messagePage(
-    "Finish setting up this deployment",
-    `Add these settings as Worker secrets, then redeploy: ${error.missing.join(", ")}. The README's sign-in setup section lists where each value comes from.`,
-    500,
-  );
 }
 
 async function startAccessSignIn(
@@ -113,7 +112,9 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
       try {
         settings = readAccessSettings(env);
       } catch (error) {
-        if (error instanceof SetupError) return setupPage(error);
+        if (error instanceof SetupError) {
+          return setupPage(error.missing, url.origin, SETTING_NAMES);
+        }
         throw error;
       }
 
