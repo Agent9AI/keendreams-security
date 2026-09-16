@@ -330,13 +330,31 @@ same validation as `assert_fact` and is stored as `proposed` with
 
 `SKILL.md` at the repo root, `name: hexa-to-memory`, invoked as `/hexa-to-memory`.
 
+**Verified against Tenable's documentation** (`docs.tenable.com`, Hexa AI MCP page,
+read 2026-09-16): endpoint `https://cloud.tenable.com/mcp/`, HTTP transport,
+authenticated with the header `X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>`.
+Requires a Tenable One Foundation or Advanced license and is not available in
+Tenable FedRAMP Moderate environments. The gateway rate limits and answers `429`
+when exceeded; Tenable publishes no specific quota. The server exposes about 90
+tools, and the documentation does not enumerate them all.
+
 1. Check that both MCP servers are connected. If Tenable Hexa is missing, show:
    `claude mcp add --transport http tenable-hexa https://cloud.tenable.com/mcp/ --header "X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>"`.
-   Keys live only in the analyst's own Claude Code configuration.
+   Keys live only in the analyst's own Claude Code configuration, never in this
+   repo, the Worker, or the memory.
 2. Ask for a focused scope: asset, tag, CVE, severity, or time window.
-3. Pull findings with Hexa read-only tools only. The skill never calls Hexa
-   tools that launch, modify or delete anything. Tool names are taken from a
-   live `tools/list` against a real Tenable One instance during the build.
+3. Pull findings with an explicit allowlist of Hexa read tools, named in
+   `SKILL.md`. The skill never calls a Hexa tool that launches, modifies,
+   notifies or deletes. Hexa mixes reads and writes in one server, and the
+   documented write tools include `scan_create`, `scan_launch`,
+   `ticket_create_issue`, `ticket_notify_assignees`, `tagging_create_tag`,
+   `tagging_add_tags_assets` and `dashboard_create_dashboard_from_template`.
+   Calling one of those would act on the analyst's production estate, so the
+   skill names the tools it may call rather than letting a model choose. The
+   read tools it uses are confirmed against a live `tools/list` during the build;
+   the documented candidates are `tenable_one_search_assets`, `asset_search`,
+   `workbenches_list_vulnerabilities` and
+   `workbenches_list_assets_with_vulnerabilities`.
 4. Run `find_facts` for existing `ACCEPTED_RISK`, `FALSE_POSITIVE` and
    `REMEDIATED` facts on each asset and vulnerability pair.
 5. Write one episode per batch with `source: tenable-hexa`, then `HAS_VULN`
@@ -434,7 +452,7 @@ No component sends data to the project authors.
 | OAuth provider per-user grant revocation | Resolved: `revokeGrant(grantId, userId)` exists in 0.10.3 |
 | Deploy button creates `OAUTH_KV` when `wrangler.jsonc` omits the namespace id | README documents `wrangler kv namespace create OAUTH_KV` as the fallback |
 | Access ID tokens use RS256 with a key id, `iss` equal to the issuer URL and `aud` equal to the client id (live check against a real Access for SaaS app, Plan 2 Task 3) | Set `ACCESS_ISSUER`, or relax the audience check, and record what Access actually sends |
-| Hexa MCP read-only tool names | Captured from live `tools/list`; skill lists only confirmed read tools |
+| Hexa MCP read-only tool names (endpoint, transport and auth header confirmed from Tenable's documentation 2026-09-16; the ~90 tools are not enumerated there and mix reads with writes) | Capture `tools/list` live; the skill allowlists only confirmed read tools and never calls the documented write tools listed in section 9 |
 | Workers AI model reliably returns schema-valid JSON for `suggest_facts` | Try another model; ship `suggest_facts` disabled by default if none qualifies |
 | Claude Desktop remote OAuth connection works | Omit Claude Desktop from `compatible_clients` |
 
