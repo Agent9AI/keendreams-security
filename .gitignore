@@ -16,3 +16,6 @@ coverage/
 # OS and editor
 .DS_Store
 *.log
+
+# Local deploy overlay: carries this deployer's own resource ids. Never committed.
+wrangler.deploy.jsonc

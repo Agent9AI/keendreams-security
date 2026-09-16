@@ -272,6 +272,8 @@ Your Tenable keys stay in your own MCP client configuration. This project never 
 
 > **Note:** Hexa exposes roughly 90 tools and they are not all read-only. Documented write tools include `scan_create`, `scan_launch`, `ticket_create_issue` and `ticket_notify_assignees`. Anything that reads from Hexa on your behalf should name the specific read tools it may call rather than letting a model choose.
 
+This repository ships [`SKILL.md`](SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists four Hexa read tools by name, refuses everything that writes, checks each finding against what your team already decided, and leaves the result as proposals for review.
+
 ---
 
 ## Known limitations
