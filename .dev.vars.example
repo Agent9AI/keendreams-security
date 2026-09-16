@@ -1,0 +1,13 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Values come from your Cloudflare One Access for SaaS (OIDC) application.
+ACCESS_CLIENT_ID=
+ACCESS_CLIENT_SECRET=
+ACCESS_AUTHORIZATION_URL=
+ACCESS_TOKEN_URL=
+ACCESS_JWKS_URL=
+# Optional. Set only if the live check shows Access uses a different issuer.
+ACCESS_ISSUER=
+# Generate with: openssl rand -hex 32
+COOKIE_ENCRYPTION_KEY=
+# Comma-separated admin emails, for example: you@company.com
+ADMIN_EMAILS=

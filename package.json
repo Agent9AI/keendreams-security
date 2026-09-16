@@ -20,6 +20,40 @@
   "overrides": {
     "vite": "7.3.6"
   },
+  "cloudflare": {
+    "bindings": {
+      "ACCESS_CLIENT_ID": {
+        "description": "Client ID of your Cloudflare One **Access for SaaS** application (OIDC). See the [sign-in setup guide](https://github.com/Agent9AI/keendreams-security#sign-in-setup)."
+      },
+      "ACCESS_CLIENT_SECRET": {
+        "description": "Client secret of the same Access for SaaS application."
+      },
+      "ACCESS_AUTHORIZATION_URL": {
+        "description": "Authorization endpoint of the Access for SaaS application, ending in `/authorization`."
+      },
+      "ACCESS_TOKEN_URL": {
+        "description": "Token endpoint of the Access for SaaS application, ending in `/token`."
+      },
+      "ACCESS_JWKS_URL": {
+        "description": "Key endpoint of the Access for SaaS application, ending in `/jwks`."
+      },
+      "ACCESS_ISSUER": {
+        "description": "Optional. Only needed if your Access application reports an issuer other than the token endpoint without `/token`."
+      },
+      "COOKIE_ENCRYPTION_KEY": {
+        "description": "Random string that signs sign-in cookies. Generate it with `openssl rand -hex 32`."
+      },
+      "ADMIN_EMAILS": {
+        "description": "Comma-separated emails of the people who administer this memory, for example `you@company.com`."
+      },
+      "OAUTH_KV": {
+        "description": "Stores OAuth grants and short-lived sign-in state."
+      },
+      "CLIENT_MEMORY": {
+        "description": "One private SQLite database per client."
+      }
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
     "@cloudflare/vitest-plugin": "1.1.10",
@@ -28,5 +62,10 @@
     "vite": "7.3.6",
     "vitest": "4.1.11",
     "wrangler": "4.132.0"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "0.10.3",
+    "@modelcontextprotocol/server": "2.0.0",
+    "zod": "4.6.5"
   }
 }
