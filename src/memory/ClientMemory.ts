@@ -9,6 +9,7 @@ import {
   markFailed,
   pendingCount,
 } from "../search/queue";
+import { type RecallQuery, type RecallView, recall } from "../search/recall";
 import { type ChainCheck, verifyAuditChain } from "./audit";
 import { type EpisodeMeta, episodeMeta, recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
@@ -128,6 +129,11 @@ export class ClientMemory extends DurableObject<Env> {
 
   listProposals(limit?: number): ProposalView[] {
     return listProposals(this.sql, limit);
+  }
+
+  /** Hybrid search. Falls back to keyword only when the search backend is down. */
+  recall(query: RecallQuery): Promise<RecallView> {
+    return recall(this.sql, this.backend, this.clientSlug(), query, new Date().toISOString());
   }
 
   episodeMeta(episodeId: string): EpisodeMeta | null {

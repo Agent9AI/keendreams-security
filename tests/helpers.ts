@@ -1,8 +1,27 @@
 import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import type { ClientMemory } from "../src/memory/ClientMemory";
+import { memoryErrorCode } from "../src/memory/errors";
 import type { Principal, WriteContext } from "../src/memory/types";
 import type { Registry } from "../src/registry/registry";
+
+/**
+ * The error code a call failed with, or null if it succeeded.
+ *
+ * Always assert a Durable Object RPC failure this way rather than with
+ * `expect(stub.method()).rejects`. An RPC promise is a proxy: every property
+ * access on it spawns another pipelined promise that rejects in turn, and the
+ * matcher's probing leaves those unobserved, which vitest reports as an
+ * unhandled rejection. Awaiting once inside try/catch touches it exactly once.
+ */
+export async function codeOf(promise: Promise<unknown>): Promise<string | null> {
+  try {
+    await promise;
+  } catch (error) {
+    return memoryErrorCode(error);
+  }
+  return null;
+}
 
 export const ALICE: Principal = {
   email: "alice@example.com",
