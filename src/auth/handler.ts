@@ -1,5 +1,7 @@
 import type { AuthRequest, OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { type AccessSettings, type AppSettings, readAccessSettings, SetupError } from "../config";
+import { DEMO_IDENTITY, demoCookieKey, isDemoMode } from "../web/demo";
+import { reviewResponse } from "../web/review";
 import {
   AccessError,
   accessAuthorizeUrl,
@@ -18,6 +20,7 @@ import {
   newCsrfToken,
 } from "./cookies";
 import { putOnce, takeOnce } from "./onceStore";
+import { readSession, sessionCookie } from "./session";
 import type { AuthProps } from "./types";
 
 export type AuthEnv = Env & AppSettings & { OAUTH_PROVIDER: OAuthHelpers };
@@ -69,20 +72,60 @@ async function startAccessSignIn(
   return redirect(location, cookies);
 }
 
+async function startBrowserSignIn(
+  env: AuthEnv,
+  settings: AccessSettings,
+  request: Request,
+  returnTo: string,
+): Promise<Response> {
+  const { verifier, challenge } = await pkcePair();
+  const state = await putOnce<UpstreamState>(env.OAUTH_KV, UPSTREAM_PREFIX, {
+    returnTo,
+    codeVerifier: verifier,
+  });
+  return redirect(
+    accessAuthorizeUrl(settings, { redirectUri: callbackUri(request), state, challenge }),
+  );
+}
+
 /**
  * Browser routes for the OAuth provider's `defaultHandler`: the approval screen,
- * the hop to Cloudflare Access, and the callback that issues this server's token.
+ * the hop to Cloudflare Access, the callback that issues this server's token, and
+ * the review queue where a person confirms or rejects proposed facts.
  */
 export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
   return {
     async fetch(request: Request, env: AuthEnv): Promise<Response> {
       const url = new URL(request.url);
+
+      // Demo mode answers only on loopback and needs no Access application, so it
+      // is resolved before the settings that a real deployment requires.
+      if (url.pathname === "/review" && isDemoMode(env, url)) {
+        const key = demoCookieKey();
+        const session = await readSession(request, key, deps.now());
+        if (session === null) {
+          return redirect(url.toString(), [await sessionCookie(key, DEMO_IDENTITY, deps.now())]);
+        }
+        return reviewResponse(request, env, session);
+      }
+
       let settings: AccessSettings;
       try {
         settings = readAccessSettings(env);
       } catch (error) {
         if (error instanceof SetupError) return setupPage(error);
         throw error;
+      }
+
+      if (url.pathname === "/review") {
+        const session = await readSession(request, settings.cookieKey, deps.now());
+        if (session === null) {
+          if (request.method !== "GET") {
+            return messagePage("Your session expired", "Open the review page again.", 403);
+          }
+          return startBrowserSignIn(env, settings, request, `${url.pathname}${url.search}`);
+        }
+        return reviewResponse(request, env, session);
       }
 
       if (url.pathname === "/authorize" && request.method === "GET") {
@@ -185,22 +228,27 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
             idToken,
             Math.floor(deps.now() / 1000),
           );
-          const client = await env.OAUTH_PROVIDER.lookupClient(upstream.oauthRequest.clientId);
+          const browserSession = await sessionCookie(settings.cookieKey, claims, deps.now());
+          const oauthRequest = upstream.oauthRequest;
+          if (!oauthRequest) {
+            return redirect(upstream.returnTo ?? "/review", [browserSession]);
+          }
+          const client = await env.OAUTH_PROVIDER.lookupClient(oauthRequest.clientId);
           const props: AuthProps = {
             sub: claims.sub,
             email: claims.email,
             name: claims.name,
-            clientId: upstream.oauthRequest.clientId,
-            clientName: client?.clientName ?? upstream.oauthRequest.clientId,
+            clientId: oauthRequest.clientId,
+            clientName: client?.clientName ?? oauthRequest.clientId,
           };
           const { redirectTo } = await env.OAUTH_PROVIDER.completeAuthorization({
-            request: upstream.oauthRequest,
+            request: oauthRequest,
             userId: claims.sub,
             metadata: { label: claims.email },
-            scope: upstream.oauthRequest.scope,
+            scope: oauthRequest.scope,
             props,
           });
-          return redirect(redirectTo);
+          return redirect(redirectTo, [browserSession]);
         } catch (error) {
           if (error instanceof AccessError) {
             console.error(error.message);

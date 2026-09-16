@@ -8,6 +8,7 @@ export const SETTING_NAMES = [
   "COOKIE_ENCRYPTION_KEY",
   "ADMIN_EMAILS",
   "SUGGEST_MODEL",
+  "DEMO_MODE",
 ] as const;
 
 export type SettingName = (typeof SETTING_NAMES)[number];
@@ -37,7 +38,12 @@ export type AccessSettings = {
 };
 
 /** Settings the deployment works without. `ACCESS_ISSUER` only overrides the derived issuer. */
-const OPTIONAL_SETTINGS: SettingName[] = ["ADMIN_EMAILS", "ACCESS_ISSUER", "SUGGEST_MODEL"];
+const OPTIONAL_SETTINGS: SettingName[] = [
+  "ADMIN_EMAILS",
+  "ACCESS_ISSUER",
+  "SUGGEST_MODEL",
+  "DEMO_MODE",
+];
 const ACCESS_SETTINGS: SettingName[] = SETTING_NAMES.filter(
   (name) => !OPTIONAL_SETTINGS.includes(name),
 );

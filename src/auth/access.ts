@@ -12,7 +12,12 @@ export class AccessError extends Error {
   }
 }
 
-export type UpstreamState = { oauthRequest: AuthRequest; codeVerifier: string };
+/** `oauthRequest` drives an MCP authorization; `returnTo` drives a browser sign-in. */
+export type UpstreamState = {
+  oauthRequest?: AuthRequest;
+  returnTo?: string;
+  codeVerifier: string;
+};
 export type IdentityClaims = { sub: string; email: string; name: string };
 
 const CLOCK_SKEW_SECONDS = 60;
