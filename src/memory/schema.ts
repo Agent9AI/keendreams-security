@@ -1,3 +1,4 @@
+import { QUEUE_SCHEMA } from "../search/queue";
 import { AUDIT_SCHEMA } from "./audit";
 
 const V1: readonly string[] = [
@@ -68,8 +69,14 @@ const V1: readonly string[] = [
   )`,
 ];
 
+/** Search support: work waiting to be indexed, and what this client is called. */
+const V2: readonly string[] = [
+  ...QUEUE_SCHEMA,
+  "CREATE TABLE memory_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+];
+
 /** Each entry is one schema version; statements run one at a time. */
-export const MIGRATIONS: readonly (readonly string[])[] = [V1];
+export const MIGRATIONS: readonly (readonly string[])[] = [V1, V2];
 
 export function schemaVersion(sql: SqlStorage): number {
   sql.exec("CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");

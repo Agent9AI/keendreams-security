@@ -5,6 +5,7 @@ import {
   predicatesClosedBy,
 } from "../policy/predicates";
 import { FACT_ORIGINS, type FactOrigin, initialStatus } from "../policy/trust";
+import { enqueue } from "../search/queue";
 import { appendAudit } from "./audit";
 import { upsertEntity } from "./entities";
 import { MemoryError } from "./errors";
@@ -197,6 +198,7 @@ export function assertFact(
     factId,
     [predicate, subject.key, object.key, reason ?? ""].join(" ").trim(),
   );
+  enqueue(sql, ctx.now, "fact", factId);
   const auditSeq = appendAudit(sql, ctx.now, {
     actor: ctx.principal.email,
     action: "fact.assert",

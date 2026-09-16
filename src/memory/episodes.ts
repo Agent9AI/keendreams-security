@@ -1,3 +1,4 @@
+import { enqueue } from "../search/queue";
 import { appendAudit, sha256Hex } from "./audit";
 import { MemoryError } from "./errors";
 import { consumeWrite } from "./limits";
@@ -98,6 +99,7 @@ export function recordEpisode(
       ctx.now,
     );
     sql.exec("INSERT INTO fts (kind, ref_id, text) VALUES ('episode', ?, ?)", id, part);
+    enqueue(sql, ctx.now, "episode", id);
   }
 
   const auditSeq = appendAudit(sql, ctx.now, {

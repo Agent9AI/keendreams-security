@@ -23,6 +23,10 @@ describe("backendFromEnv", () => {
     expect(backendFromEnv({ ...real, SUGGEST_MODEL: "off" })?.suggestModel).toBeNull();
   });
 
+  // This calls the real AI binding, which cannot run locally, so miniflare logs
+  // "Binding AI needs to be run remotely" and an unhandled rejection from its own
+  // proxy client. Both lines are expected: the point of the test is that a binding
+  // nobody can reach surfaces as `unavailable` rather than as a crash.
   it("reports a binding that cannot run locally as unavailable, not as a crash", async () => {
     const backend = backendFromEnv(real);
     expect(backend).not.toBeNull();
