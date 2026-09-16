@@ -2599,4 +2599,803 @@ git add src/web/html.ts src/auth/consent.ts src/auth/handler.ts tests/oauthFake.
 git commit -m "Add consent screen and Access sign-in routes"
 ```
 
+---
+
+### Task 5: MCP tools over the memory core
+
+**Files:**
+- Modify: `src/memory/episodes.ts`, `src/memory/ClientMemory.ts`, `tests/episodes.test.ts`
+- Create: `src/mcp/results.ts`, `src/mcp/context.ts`, `src/mcp/tools.ts`, `src/mcp/server.ts`, `tests/mcpFixtures.ts`, `tests/mcp-tools.test.ts`
+
+**Interfaces:**
+- Consumes: `adminEmails`, `type AppSettings` (Task 1); `Registry` RPC (Task 2); `type AuthProps`, `isAuthProps` (Task 3); every `ClientMemory` RPC (Plan 1).
+- Produces:
+  - `type EpisodeMeta = { episodeId: string; source: string; principalEmail: string; oauthClientId: string }`, `episodeMeta(sql: SqlStorage, episodeId: string): EpisodeMeta | null`, RPC `ClientMemory.episodeMeta(episodeId: string): EpisodeMeta | null`.
+  - `type ToolResult`, `ok(value: unknown): ToolResult`, `fail(error: unknown): ToolResult`, `labelFact<T extends { status: string }>(fact: T): T & { confidenceLabel: string }`.
+  - `type ToolEnv`, `type ToolContext`, `type OpenClient`, `principalOf(props: AuthProps)`, `registryOf(env: ToolEnv)`, `openClient(ctx: ToolContext, requested?: string): Promise<OpenClient>`, `originForEvidence(open: OpenClient, principal: Principal, evidenceEpisodeId: string): Promise<FactOrigin>`.
+  - `registerMemoryTools(server: McpServer, ctx: ToolContext): void`, `SERVER_NAME`, `SERVER_VERSION`, `mcpApiHandler` (used by Task 6).
+  - Test helpers: `ANALYST`, `SYNC_AGENT`, `callTool`, `listTools`.
+
+- [ ] **Step 1: Add `episodeMeta` to the memory core**
+
+In `src/memory/episodes.ts`, add at the end:
+
+```ts
+export type EpisodeMeta = {
+  episodeId: string;
+  source: string;
+  principalEmail: string;
+  oauthClientId: string;
+};
+
+/** Who recorded an episode and what source they declared. Used to decide trust. */
+export function episodeMeta(sql: SqlStorage, episodeId: string): EpisodeMeta | null {
+  const row = sql
+    .exec<{ id: string; source: string; principal_email: string; oauth_client_id: string }>(
+      "SELECT id, source, principal_email, oauth_client_id FROM episodes WHERE id = ? AND part_of IS NULL",
+      String(episodeId ?? ""),
+    )
+    .toArray()[0];
+  return row
+    ? {
+        episodeId: row.id,
+        source: row.source,
+        principalEmail: row.principal_email,
+        oauthClientId: row.oauth_client_id,
+      }
+    : null;
+}
+```
+
+In `src/memory/ClientMemory.ts`, add `episodeMeta` to the `./episodes` import and this read method next to `findFacts`:
+
+```ts
+  episodeMeta(episodeId: string): EpisodeMeta | null {
+    return episodeMeta(this.sql, episodeId);
+  }
+```
+
+with `import { episodeMeta, type EpisodeMeta, recordEpisode } from "./episodes";`.
+
+In `tests/episodes.test.ts`, add to the `recordEpisode` describe block:
+
+```ts
+  it("reports who recorded an episode and the source they declared", async () => {
+    const memory = freshMemory();
+    const result = await memory.recordEpisode(ALICE, { content: "scan output", source: "nessus" });
+    expect(await memory.episodeMeta(result.episodeId)).toEqual({
+      episodeId: result.episodeId,
+      source: "nessus",
+      principalEmail: "alice@example.com",
+      oauthClientId: "client-alice",
+    });
+    expect(await memory.episodeMeta("missing")).toBeNull();
+  });
+```
+
+- [ ] **Step 2: Create `src/mcp/results.ts`**
+
+```ts
+import { memoryErrorCode } from "../memory/errors";
+
+export type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
+
+export function ok(value: unknown): ToolResult {
+  return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
+}
+
+/**
+ * Known failures keep their stable code prefix so agents can react to them.
+ * Anything else is reported as `unavailable` and logged in the deployer's account.
+ */
+export function fail(error: unknown): ToolResult {
+  const code = memoryErrorCode(error);
+  if (code && error instanceof Error) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+  console.error("keendreams tool failure", error);
+  return {
+    isError: true,
+    content: [{ type: "text", text: "unavailable: the memory service failed; check the Worker logs" }],
+  };
+}
+
+const LABELS: Record<string, string> = {
+  proposed: "UNCONFIRMED",
+  trusted: "TRUSTED",
+  rejected: "REJECTED",
+  superseded: "SUPERSEDED",
+};
+
+/** Marks every fact so an agent never mistakes a proposal for something settled. */
+export function labelFact<T extends { status: string }>(fact: T): T & { confidenceLabel: string } {
+  return { ...fact, confidenceLabel: LABELS[fact.status] ?? fact.status.toUpperCase() };
+}
+
+export async function run(fn: () => Promise<unknown>): Promise<ToolResult> {
+  try {
+    return ok(await fn());
+  } catch (error) {
+    return fail(error);
+  }
+}
+```
+
+- [ ] **Step 3: Create `src/mcp/context.ts`**
+
+```ts
+import type { AuthProps } from "../auth/types";
+import type { ClientMemory } from "../memory/ClientMemory";
+import { MemoryError } from "../memory/errors";
+import type { Principal } from "../memory/types";
+import type { FactOrigin } from "../policy/trust";
+import type { AccessRole } from "../registry/registry";
+import type { Registry } from "../registry/Registry";
+
+export type ToolEnv = Env;
+export type ToolContext = {
+  env: ToolEnv;
+  props: AuthProps;
+  adminEmails: Set<string>;
+  origin: string;
+};
+export type OpenClient = {
+  slug: string;
+  role: AccessRole;
+  memory: DurableObjectStub<ClientMemory>;
+  registry: DurableObjectStub<Registry>;
+  writesPerMinute: number;
+};
+
+export const REGISTRY_NAME = "registry";
+
+export function principalOf(props: AuthProps): Principal {
+  return {
+    email: props.email.toLowerCase(),
+    oauthClientId: props.clientId,
+    oauthClientName: props.clientName,
+  };
+}
+
+export function registryOf(env: ToolEnv): DurableObjectStub<Registry> {
+  return env.REGISTRY.getByName(REGISTRY_NAME);
+}
+
+/** Resolves which client this person may open, and its write budget. */
+export async function openClient(ctx: ToolContext, requested?: string): Promise<OpenClient> {
+  const registry = registryOf(ctx.env);
+  const access = await registry.resolveAccess({
+    email: ctx.props.email,
+    isAdmin: ctx.adminEmails.has(ctx.props.email.toLowerCase()),
+    client: requested,
+  });
+  return {
+    slug: access.slug,
+    role: access.role,
+    memory: ctx.env.CLIENT_MEMORY.getByName(`client:${access.slug}`),
+    registry,
+    writesPerMinute: await registry.writeLimit(access.slug),
+  };
+}
+
+/**
+ * Trust follows the evidence. A fact starts trusted only when the episode it cites
+ * was recorded by this same identity and declared a source an admin allowlisted.
+ */
+export async function originForEvidence(
+  open: OpenClient,
+  principal: Principal,
+  evidenceEpisodeId: string,
+): Promise<FactOrigin> {
+  const meta = await open.memory.episodeMeta(evidenceEpisodeId);
+  if (!meta) {
+    throw new MemoryError("not_found", `evidence episode "${evidenceEpisodeId}" does not exist`);
+  }
+  if (meta.principalEmail !== principal.email || meta.oauthClientId !== principal.oauthClientId) {
+    return "mcp";
+  }
+  const allowed = await open.registry.isAllowlisted({
+    clientSlug: open.slug,
+    principalEmail: principal.email,
+    oauthClientId: principal.oauthClientId,
+    source: meta.source,
+  });
+  return allowed ? "allowlisted_source" : "mcp";
+}
+```
+
+- [ ] **Step 4: Create `src/mcp/tools.ts`**
+
+```ts
+import type { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod";
+import type { FactStatus } from "../memory/types";
+import { openClient, originForEvidence, principalOf, type ToolContext } from "./context";
+import { labelFact, run } from "./results";
+
+const CLIENT = {
+  client: z.string().optional().describe("Client slug. Leave this out in single-team deployments."),
+};
+const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false } as const;
+const WRITES = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+
+function reviewUrl(ctx: ToolContext, slug: string): string {
+  return `${ctx.origin}/review?client=${encodeURIComponent(slug)}`;
+}
+
+/** Registers the seven memory tools on a per-request server instance. */
+export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
+  server.registerTool(
+    "record_episode",
+    {
+      title: "Record evidence",
+      description:
+        "Store raw evidence as an episode: scan output, a ticket, a chat excerpt or an analyst note. Credentials are blanked out before storage, and the text is kept as quoted evidence, never as instructions.",
+      inputSchema: z.object({
+        ...CLIENT,
+        content: z.string().min(1).describe("The raw evidence text."),
+        source: z
+          .string()
+          .describe("Where it came from, for example tenable-hexa, nessus, ticket or analyst-note."),
+        observed_at: z
+          .string()
+          .optional()
+          .describe("ISO 8601 time the evidence was observed. Defaults to now."),
+      }),
+      annotations: WRITES,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const result = await open.memory.recordEpisode(
+          principalOf(ctx.props),
+          { content: input.content, source: input.source, observedAt: input.observed_at },
+          { writesPerMinute: open.writesPerMinute },
+        );
+        return { client: open.slug, ...result };
+      }),
+  );
+
+  server.registerTool(
+    "assert_fact",
+    {
+      title: "Propose a fact",
+      description:
+        "Record that a subject relates to an object, citing the episode that proves it. Facts stay UNCONFIRMED until a reviewer confirms them in a browser, unless they come from an allowlisted automation source.",
+      inputSchema: z.object({
+        ...CLIENT,
+        subject: z.string().describe("Canonical key, for example asset:web-prod-03."),
+        predicate: z
+          .string()
+          .describe(
+            "One of HAS_VULN, REMEDIATED, FALSE_POSITIVE, ACCEPTED_RISK, OWNS, OBSERVED, RELATED_TO.",
+          ),
+        object: z.string().describe("Canonical key, for example cve:CVE-2026-1234."),
+        evidence_episode_id: z.string().describe("Episode id returned by record_episode."),
+        valid_from: z.string().optional().describe("ISO 8601 time the fact became true."),
+        valid_to: z
+          .string()
+          .optional()
+          .describe("ISO 8601 expiry. Required for ACCEPTED_RISK."),
+        reason: z.string().optional().describe("Why, in one or two sentences. Required for ACCEPTED_RISK."),
+      }),
+      annotations: WRITES,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const principal = principalOf(ctx.props);
+        const origin = await originForEvidence(open, principal, input.evidence_episode_id);
+        const result = await open.memory.assertFact(
+          principal,
+          {
+            subject: input.subject,
+            predicate: input.predicate,
+            object: input.object,
+            evidenceEpisodeId: input.evidence_episode_id,
+            validFrom: input.valid_from,
+            validTo: input.valid_to,
+            reason: input.reason,
+          },
+          origin,
+          { writesPerMinute: open.writesPerMinute },
+        );
+        return {
+          client: open.slug,
+          ...labelFact(result),
+          review_url: result.status === "proposed" ? reviewUrl(ctx, open.slug) : undefined,
+        };
+      }),
+  );
+
+  server.registerTool(
+    "find_facts",
+    {
+      title: "Find facts",
+      description:
+        "Exact lookup by subject, relationship, object or status. Answers questions like whether a CVE on a host was already accepted as risk. Use as_of to ask what was true on a past date.",
+      inputSchema: z.object({
+        ...CLIENT,
+        subject: z.string().optional(),
+        predicate: z.string().optional(),
+        object: z.string().optional(),
+        status: z
+          .enum(["current", "proposed", "trusted", "rejected", "superseded"])
+          .optional()
+          .describe("Defaults to current: trusted and still valid."),
+        as_of: z.string().optional().describe("ISO 8601 date, only with the default status."),
+        limit: z.number().int().min(1).max(200).optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const facts = await open.memory.findFacts({
+          subject: input.subject,
+          predicate: input.predicate,
+          object: input.object,
+          status: input.status as "current" | FactStatus | undefined,
+          asOf: input.as_of,
+          limit: input.limit,
+        });
+        return { client: open.slug, count: facts.length, facts: facts.map(labelFact) };
+      }),
+  );
+
+  server.registerTool(
+    "get_entity",
+    {
+      title: "Get an entity",
+      description:
+        "Everything currently known about one asset, vulnerability, identity or indicator, with its neighbors and how many proposals are waiting for review.",
+      inputSchema: z.object({ ...CLIENT, key: z.string().describe("Canonical key.") }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const entity = await open.memory.getEntity(input.key);
+        return { client: open.slug, ...entity, facts: entity.facts.map(labelFact) };
+      }),
+  );
+
+  server.registerTool(
+    "explore_graph",
+    {
+      title: "Explore the graph",
+      description:
+        "Walk outward from an entity across trusted relationships, up to three hops, optionally limited to certain relationship types.",
+      inputSchema: z.object({
+        ...CLIENT,
+        key: z.string().describe("Canonical key to start from."),
+        depth: z.number().int().min(1).max(3).optional(),
+        predicates: z.array(z.string()).max(7).optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const graph = await open.memory.exploreGraph({
+          key: input.key,
+          depth: input.depth,
+          predicates: input.predicates,
+        });
+        return { client: open.slug, ...graph, edges: graph.edges.map(labelFact) };
+      }),
+  );
+
+  server.registerTool(
+    "fact_history",
+    {
+      title: "Fact history",
+      description:
+        "The full timeline for one relationship: every version, what replaced it, who confirmed it and when. Built for audits.",
+      inputSchema: z.object({
+        ...CLIENT,
+        fact_id: z.string().optional(),
+        subject: z.string().optional(),
+        predicate: z.string().optional(),
+        object: z.string().optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const history = await open.memory.factHistory({
+          factId: input.fact_id,
+          subject: input.subject,
+          predicate: input.predicate,
+          object: input.object,
+        });
+        return { client: open.slug, ...history, facts: history.facts.map(labelFact) };
+      }),
+  );
+
+  server.registerTool(
+    "list_proposals",
+    {
+      title: "List pending proposals",
+      description:
+        "Facts waiting for a reviewer, each with a short quote of its evidence and any flags. Confirming happens only on the review page in a browser.",
+      inputSchema: z.object({ ...CLIENT, limit: z.number().int().min(1).max(200).optional() }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const proposals = await open.memory.listProposals(input.limit);
+        return {
+          client: open.slug,
+          count: proposals.length,
+          review_url: reviewUrl(ctx, open.slug),
+          proposals: proposals.map(labelFact),
+        };
+      }),
+  );
+}
+```
+
+- [ ] **Step 5: Create `src/mcp/server.ts`**
+
+```ts
+import { createMcpHandler, McpServer, originValidationResponse } from "@modelcontextprotocol/server";
+import { env } from "cloudflare:workers";
+import { isAuthProps } from "../auth/types";
+import { adminEmails, type AppSettings } from "../config";
+import type { ToolEnv } from "./context";
+import { registerMemoryTools } from "./tools";
+
+export const SERVER_NAME = "keendreams-security-memory";
+export const SERVER_VERSION = "0.1.0";
+
+/** One MCP server per request; tools close over the signed-in identity. */
+const handler = createMcpHandler((requestCtx) => {
+  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+  const props = (requestCtx.authInfo?.extra as { props?: unknown } | undefined)?.props;
+  if (isAuthProps(props)) {
+    registerMemoryTools(server, {
+      env: env as ToolEnv,
+      props,
+      adminEmails: adminEmails(env as AppSettings),
+      origin: requestCtx.requestInfo ? new URL(requestCtx.requestInfo.url).origin : "",
+    });
+  }
+  return server;
+});
+
+/**
+ * The `/mcp` route. The OAuth provider verifies the bearer token before this runs
+ * and puts the signed-in identity on `ctx.props`; the access token itself is never
+ * passed into the MCP layer.
+ */
+export const mcpApiHandler = {
+  async fetch(request: Request, _env: unknown, ctx: ExecutionContext): Promise<Response> {
+    const rejected = originValidationResponse(request, [new URL(request.url).hostname]);
+    if (rejected) return rejected;
+    const props = (ctx as ExecutionContext & { props?: unknown }).props;
+    if (!isAuthProps(props)) {
+      return Response.json({ error: "unauthorized" }, { status: 401 });
+    }
+    return handler.fetch(request, {
+      authInfo: { token: "", clientId: props.clientId, scopes: [], extra: { props } },
+    });
+  },
+};
+```
+
+- [ ] **Step 6: Create `tests/mcpFixtures.ts`**
+
+```ts
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { env } from "cloudflare:workers";
+import type { AuthProps } from "../src/auth/types";
+import { mcpApiHandler } from "../src/mcp/server";
+
+export const ANALYST: AuthProps = {
+  sub: "access-user-1",
+  email: "alice@example.com",
+  name: "Alice Analyst",
+  clientId: "client-alice",
+  clientName: "Claude Code",
+};
+
+export const SYNC_AGENT: AuthProps = {
+  sub: "access-user-2",
+  email: "sync@example.com",
+  name: "Hexa Sync",
+  clientId: "client-sync",
+  clientName: "hexa-sync",
+};
+
+export const BOB: AuthProps = {
+  sub: "access-user-3",
+  email: "bob@example.com",
+  name: "Bob Builder",
+  clientId: "client-bob",
+  clientName: "Claude Code",
+};
+
+export const MCP_URL = "https://memory.example.com/mcp";
+
+type JsonRpcEnvelope = {
+  result?: { content?: { type: string; text: string }[]; isError?: boolean; tools?: unknown[] };
+};
+
+function parseEventStream(body: string): JsonRpcEnvelope {
+  const line = body.split("\n").find((entry) => entry.startsWith("data: "));
+  if (!line) throw new Error(`no data line in MCP response: ${body.slice(0, 200)}`);
+  return JSON.parse(line.slice(6)) as JsonRpcEnvelope;
+}
+
+async function send(
+  props: AuthProps | null,
+  body: unknown,
+  extraHeaders: Record<string, string> = {},
+): Promise<{ status: number; envelope: JsonRpcEnvelope | null }> {
+  const request = new Request(MCP_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      ...extraHeaders,
+    },
+    body: JSON.stringify(body),
+  });
+  const ctx = createExecutionContext() as ExecutionContext & { props?: AuthProps };
+  if (props) ctx.props = props;
+  const response = await mcpApiHandler.fetch(request, env, ctx);
+  await waitOnExecutionContext(ctx);
+  if (response.status !== 200) return { status: response.status, envelope: null };
+  return { status: 200, envelope: parseEventStream(await response.text()) };
+}
+
+export type ToolCall = { status: number; isError: boolean; text: string; data: Record<string, never> };
+
+export async function callTool(
+  props: AuthProps | null,
+  name: string,
+  args: Record<string, unknown> = {},
+  extraHeaders: Record<string, string> = {},
+) {
+  const { status, envelope } = await send(
+    props,
+    { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } },
+    extraHeaders,
+  );
+  const text = envelope?.result?.content?.[0]?.text ?? "";
+  const isError = envelope?.result?.isError === true;
+  return {
+    status,
+    isError,
+    text,
+    data: status === 200 && !isError && text ? (JSON.parse(text) as Record<string, unknown>) : null,
+  };
+}
+
+export async function listTools(props: AuthProps) {
+  const { envelope } = await send(props, { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} });
+  return (envelope?.result?.tools ?? []) as {
+    name: string;
+    annotations?: { readOnlyHint?: boolean };
+  }[];
+}
+
+export function registry() {
+  return env.REGISTRY.getByName("registry");
+}
+```
+
+- [ ] **Step 7: Write the failing test `tests/mcp-tools.test.ts`**
+
+```ts
+import { reset } from "cloudflare:test";
+import { afterEach, describe, expect, it } from "vitest";
+import { ANALYST, BOB, callTool, listTools, registry, SYNC_AGENT } from "./mcpFixtures";
+
+const ADMIN = "admin@example.com";
+const PAIR = { subject: "asset:web-prod-03", object: "cve:CVE-2026-1234" };
+
+afterEach(async () => {
+  await reset();
+});
+
+async function evidence(props = ANALYST, source = "analyst-note") {
+  const result = await callTool(props, "record_episode", {
+    content: `scan ${crypto.randomUUID()}`,
+    source,
+  });
+  return String(result.data?.episodeId ?? "");
+}
+
+describe("tool surface", () => {
+  it("exposes the seven memory tools and marks the read-only ones", async () => {
+    const tools = await listTools(ANALYST);
+    expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "assert_fact",
+      "explore_graph",
+      "fact_history",
+      "find_facts",
+      "get_entity",
+      "list_proposals",
+      "record_episode",
+    ]);
+    const readOnly = tools.filter((tool) => tool.annotations?.readOnlyHint).map((tool) => tool.name);
+    expect(readOnly.sort()).toEqual([
+      "explore_graph",
+      "fact_history",
+      "find_facts",
+      "get_entity",
+      "list_proposals",
+    ]);
+  });
+
+  it("refuses requests without a signed-in identity", async () => {
+    expect((await callTool(null, "find_facts")).status).toBe(401);
+  });
+
+  it("refuses a browser request from another origin", async () => {
+    const result = await callTool(ANALYST, "find_facts", {}, { origin: "https://evil.example" });
+    expect(result.status).toBe(403);
+  });
+});
+
+describe("writing memory", () => {
+  it("records evidence and proposes a fact marked UNCONFIRMED", async () => {
+    const episodeId = await evidence();
+    const result = await callTool(ANALYST, "assert_fact", {
+      ...PAIR,
+      predicate: "HAS_VULN",
+      evidence_episode_id: episodeId,
+    });
+    expect(result.data).toMatchObject({
+      client: "default",
+      status: "proposed",
+      confidenceLabel: "UNCONFIRMED",
+    });
+    expect(String(result.data?.review_url)).toContain("/review?client=default");
+  });
+
+  it("reports invalid input with its code and no internal details", async () => {
+    const episodeId = await evidence();
+    const result = await callTool(ANALYST, "assert_fact", {
+      ...PAIR,
+      predicate: "PWNED_BY",
+      evidence_episode_id: episodeId,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.text.startsWith("invalid_input:")).toBe(true);
+    expect(result.text).not.toContain("at ");
+  });
+
+  it("applies the client's write limit", async () => {
+    await registry().setWriteLimit(ADMIN, "default", 1);
+    expect((await callTool(ANALYST, "record_episode", { content: "one", source: "note" })).isError).toBe(
+      false,
+    );
+    const second = await callTool(ANALYST, "record_episode", { content: "two", source: "note" });
+    expect(second.isError).toBe(true);
+    expect(second.text.startsWith("rate_limited:")).toBe(true);
+  });
+});
+
+describe("trusted sources", () => {
+  it("trusts an allowlisted identity writing from its own allowlisted source", async () => {
+    await registry().allowSource(ADMIN, {
+      clientSlug: "default",
+      principalEmail: "sync@example.com",
+      oauthClientId: "client-sync",
+      source: "tenable-hexa",
+    });
+    const episodeId = await evidence(SYNC_AGENT, "tenable-hexa");
+    const result = await callTool(SYNC_AGENT, "assert_fact", {
+      ...PAIR,
+      predicate: "HAS_VULN",
+      evidence_episode_id: episodeId,
+    });
+    expect(result.data).toMatchObject({ status: "trusted", confidenceLabel: "TRUSTED" });
+  });
+
+  it("keeps proposals unconfirmed for another source or another identity", async () => {
+    await registry().allowSource(ADMIN, {
+      clientSlug: "default",
+      principalEmail: "sync@example.com",
+      oauthClientId: "client-sync",
+      source: "tenable-hexa",
+    });
+    const otherSource = await evidence(SYNC_AGENT, "pasted-chat");
+    const bySource = await callTool(SYNC_AGENT, "assert_fact", {
+      ...PAIR,
+      predicate: "HAS_VULN",
+      evidence_episode_id: otherSource,
+    });
+    expect(bySource.data).toMatchObject({ status: "proposed" });
+
+    const agentEpisode = await evidence(SYNC_AGENT, "tenable-hexa");
+    const byAnalyst = await callTool(ANALYST, "assert_fact", {
+      subject: "asset:web-prod-04",
+      object: "cve:CVE-2026-1234",
+      predicate: "HAS_VULN",
+      evidence_episode_id: agentEpisode,
+    });
+    expect(byAnalyst.data).toMatchObject({ status: "proposed" });
+  });
+});
+
+describe("multiple clients", () => {
+  async function multiClient() {
+    const reg = registry();
+    await reg.setMode(ADMIN, "multi");
+    await reg.createClient(ADMIN, "acme", "Acme Corp");
+    await reg.createClient(ADMIN, "beta", "Beta Inc");
+    await reg.setMember(ADMIN, "alice@example.com", "acme", "member");
+    await reg.setMember(ADMIN, "bob@example.com", "beta", "member");
+  }
+
+  it("requires a client, honours membership and keeps clients apart", async () => {
+    await multiClient();
+    const missing = await callTool(ANALYST, "find_facts");
+    expect(missing.isError).toBe(true);
+    expect(missing.text.startsWith("invalid_input:")).toBe(true);
+
+    const forbidden = await callTool(BOB, "find_facts", { client: "acme" });
+    expect(forbidden.isError).toBe(true);
+    expect(forbidden.text.startsWith("forbidden_client:")).toBe(true);
+
+    const episode = await callTool(ANALYST, "record_episode", {
+      client: "acme",
+      content: "acme scan",
+      source: "nessus",
+    });
+    await callTool(ANALYST, "assert_fact", {
+      client: "acme",
+      ...PAIR,
+      predicate: "HAS_VULN",
+      evidence_episode_id: String(episode.data?.episodeId),
+    });
+
+    const inAcme = await callTool(ANALYST, "find_facts", { client: "acme", status: "proposed" });
+    expect(inAcme.data?.count).toBe(1);
+    const inBeta = await callTool(BOB, "find_facts", { client: "beta", status: "proposed" });
+    expect(inBeta.data?.count).toBe(0);
+  });
+});
+
+describe("reading memory", () => {
+  it("lists proposals with evidence and a review link", async () => {
+    const episodeId = await evidence();
+    await callTool(ANALYST, "assert_fact", {
+      ...PAIR,
+      predicate: "HAS_VULN",
+      evidence_episode_id: episodeId,
+    });
+    const result = await callTool(ANALYST, "list_proposals");
+    expect(result.data?.count).toBe(1);
+    expect(String(result.data?.review_url)).toContain("/review?client=default");
+    const [proposal] = (result.data?.proposals ?? []) as { confidenceLabel: string; evidence: { quote: string } }[];
+    expect(proposal?.confidenceLabel).toBe("UNCONFIRMED");
+    expect(proposal?.evidence.quote.length).toBeGreaterThan(0);
+  });
+});
+```
+
+- [ ] **Step 8: Run the test to verify it fails**
+
+Run: `npx vitest run tests/mcp-tools.test.ts`
+Expected: FAIL, cannot find module `../src/mcp/server`.
+
+- [ ] **Step 9: Run tests, typecheck and lint**
+
+Run: `npm test && npm run typecheck && npm run lint`
+Expected: every test PASS, including the 10 new ones; typecheck and lint exit 0 (run `npm run format` first if only formatting is reported). If the registry tests interfere with each other, confirm `afterEach(reset)` is in place, since the Registry uses one fixed name for the whole deployment.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add src/memory/episodes.ts src/memory/ClientMemory.ts src/mcp tests/mcpFixtures.ts tests/mcp-tools.test.ts tests/episodes.test.ts
+git commit -m "Expose the memory core as MCP tools with client resolution and trusted sources"
+```
+
 <!-- PLAN CONTINUES -->
