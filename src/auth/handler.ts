@@ -113,7 +113,7 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
         settings = readAccessSettings(env);
       } catch (error) {
         if (error instanceof SetupError) {
-          return setupPage(error.missing, url.origin, SETTING_NAMES);
+          return setupPage(env, url.origin, SETTING_NAMES);
         }
         throw error;
       }

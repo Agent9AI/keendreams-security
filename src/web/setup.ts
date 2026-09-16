@@ -1,4 +1,4 @@
-import type { SettingName } from "../config";
+import type { AppSettings, SettingName } from "../config";
 import { escapeHtml, htmlResponse, PAGE_STYLE } from "./html";
 
 /** What each setting is, and where the deployer finds its value. */
@@ -75,17 +75,24 @@ function settingRow(name: string, missing: boolean): string {
  * anyone meets after deploying, so it walks through the setup rather than just
  * naming what is absent. It never displays a value, only whether one is present.
  */
+const GENERATED = "COOKIE_ENCRYPTION_KEY";
+
 export function setupPage(
-  missing: SettingName[],
+  env: AppSettings,
   workerOrigin: string,
   allNames: readonly SettingName[],
 ): Response {
-  const missingSet = new Set<string>(missing);
   const shown = allNames.filter((name) => name in SETTING_HELP);
-  const done = shown.length - shown.filter((name) => missingSet.has(name)).length;
+  // Read presence from the environment itself. The caller's `missing` list covers
+  // only required settings, so an optional one left unset would otherwise be
+  // counted as done and the page could claim it is ready when it is not.
+  const isSet = (name: SettingName) => (env[name] ?? "").trim() !== "";
+  const missingSet = new Set<string>(shown.filter((name) => !isSet(name)));
+  const done = shown.length - missingSet.size;
   const callback = `${workerOrigin}/callback`;
-  const secretCommands = missing
-    .filter((name) => name !== "COOKIE_ENCRYPTION_KEY")
+  // The cookie key is generated, never pasted, so it gets its own command below.
+  const secretCommands = shown
+    .filter((name) => missingSet.has(name) && name !== GENERATED && name !== "ADMIN_EMAILS")
     .map((name) => `npx wrangler secret put ${name}`)
     .join("\n");
 
@@ -132,7 +139,7 @@ export function setupPage(
       so nothing sensitive ends up in your shell history:</p>
       <pre><code>${escapeHtml(secretCommands || "All Access settings are already set.")}</code></pre>
       ${
-        missingSet.has("COOKIE_ENCRYPTION_KEY")
+        missingSet.has(GENERATED)
           ? `<p>Generate the cookie key rather than inventing one:</p>
       <pre><code>openssl rand -hex 32 | npx wrangler secret put COOKIE_ENCRYPTION_KEY</code></pre>`
           : ""
