@@ -10,6 +10,7 @@ import {
   pendingCount,
 } from "../search/queue";
 import { type RecallQuery, type RecallView, recall } from "../search/recall";
+import { buildSuggestPrompt, parseSuggestions, SUGGESTION_SCHEMA } from "../search/suggest";
 import { type ChainCheck, verifyAuditChain } from "./audit";
 import { type EpisodeMeta, episodeMeta, recordEpisode } from "./episodes";
 import { MemoryError } from "./errors";
@@ -134,6 +135,69 @@ export class ClientMemory extends DurableObject<Env> {
   /** Hybrid search. Falls back to keyword only when the search backend is down. */
   recall(query: RecallQuery): Promise<RecallView> {
     return recall(this.sql, this.backend, this.clientSlug(), query, new Date().toISOString());
+  }
+
+  /**
+   * Asks the deployment's own model to read one episode and name relationships.
+   * Every result is validated exactly like any other write and stored as a
+   * proposal, so a model can never grant trust. Malformed ones are counted, not
+   * repaired. A write limit is the caller's problem, so it surfaces rather than
+   * being reported as a pile of dropped suggestions.
+   */
+  async suggestFacts(
+    principal: Principal,
+    episodeId: string,
+    options: WriteOptions = {},
+  ): Promise<{ model: string; proposals: AssertFactResult[]; dropped: number }> {
+    const backend = this.backend;
+    if (backend === null || backend.suggestModel === null) {
+      throw new MemoryError("unavailable", "this deployment has no suggestion model configured");
+    }
+    const model = backend.suggestModel;
+    const text = this.episodeText(episodeId);
+    const suggestions = parseSuggestions(
+      await backend.suggest(buildSuggestPrompt(text), SUGGESTION_SCHEMA),
+    );
+
+    const proposals: AssertFactResult[] = [];
+    let dropped = 0;
+    for (const suggestion of suggestions) {
+      try {
+        proposals.push(
+          await this.assertFact(
+            principal,
+            {
+              subject: suggestion.subject,
+              predicate: suggestion.predicate,
+              object: suggestion.object,
+              evidenceEpisodeId: episodeId,
+              reason: suggestion.reason,
+            },
+            "ai_suggestion",
+            { ...options, suggestedByModel: model },
+          ),
+        );
+      } catch (error) {
+        if (error instanceof MemoryError && error.code === "rate_limited") throw error;
+        dropped += 1;
+      }
+    }
+    return { model, proposals, dropped };
+  }
+
+  /** The stored text of an episode, including any continuation parts. */
+  private episodeText(episodeId: string): string {
+    const rows = this.sql
+      .exec<{ content: string }>(
+        "SELECT content FROM episodes WHERE id = ? OR part_of = ? ORDER BY part_index",
+        String(episodeId ?? ""),
+        String(episodeId ?? ""),
+      )
+      .toArray();
+    if (rows.length === 0) {
+      throw new MemoryError("not_found", `episode "${episodeId}" does not exist`);
+    }
+    return rows.map((row) => row.content).join("");
   }
 
   episodeMeta(episodeId: string): EpisodeMeta | null {

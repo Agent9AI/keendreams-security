@@ -43,7 +43,7 @@ export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
         const result = await open.memory.recordEpisode(
           principalOf(ctx.props),
           { content: input.content, source: input.source, observedAt: input.observed_at },
-          { writesPerMinute: open.writesPerMinute },
+          { writesPerMinute: open.writesPerMinute, clientSlug: open.slug },
         );
         return { client: open.slug, ...result };
       }),
@@ -91,7 +91,7 @@ export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
             reason: input.reason,
           },
           origin,
-          { writesPerMinute: open.writesPerMinute },
+          { writesPerMinute: open.writesPerMinute, clientSlug: open.slug },
         );
         return {
           client: open.slug,
@@ -225,6 +225,75 @@ export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
           count: proposals.length,
           review_url: reviewUrl(ctx, open.slug),
           proposals: proposals.map(labelFact),
+        };
+      }),
+  );
+
+  server.registerTool(
+    "recall",
+    {
+      title: "Recall",
+      description:
+        "Ask a question in plain language. Combines keyword and semantic search over the evidence and returns the facts that answer it, each with a quote of what it rests on. Only confirmed facts come back unless include_proposed is true.",
+      inputSchema: z.object({
+        ...CLIENT,
+        query: z.string().min(1).describe("The question, or the words to look for."),
+        as_of: z.string().optional().describe("ISO 8601 date. Answers as of that moment."),
+        include_proposed: z
+          .boolean()
+          .optional()
+          .describe("Include facts nobody has confirmed yet. They stay marked UNCONFIRMED."),
+        limit: z.number().int().min(1).max(25).optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const view = await open.memory.recall({
+          query: input.query,
+          asOf: input.as_of,
+          includeProposed: input.include_proposed,
+          limit: input.limit,
+        });
+        return {
+          client: open.slug,
+          search_mode: view.searchMode,
+          count: view.count,
+          results: view.results.map(labelFact),
+          related: view.related.map(labelFact),
+          review_url: view.results.some((fact) => fact.status === "proposed")
+            ? reviewUrl(ctx, open.slug)
+            : undefined,
+        };
+      }),
+  );
+
+  server.registerTool(
+    "suggest_facts",
+    {
+      title: "Suggest facts from evidence",
+      description:
+        "Reads one episode with the deployment's own model and proposes the relationships it finds. Every suggestion is stored UNCONFIRMED for a human to review, and anything malformed is dropped and counted.",
+      inputSchema: z.object({
+        ...CLIENT,
+        episode_id: z.string().describe("Episode id returned by record_episode."),
+      }),
+      annotations: WRITES,
+    },
+    async (input) =>
+      run(async () => {
+        const open = await openClient(ctx, input.client);
+        const result = await open.memory.suggestFacts(principalOf(ctx.props), input.episode_id, {
+          writesPerMinute: open.writesPerMinute,
+          clientSlug: open.slug,
+        });
+        return {
+          client: open.slug,
+          model: result.model,
+          dropped: result.dropped,
+          proposals: result.proposals.map(labelFact),
+          review_url: reviewUrl(ctx, open.slug),
         };
       }),
   );
