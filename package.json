@@ -54,6 +54,15 @@
       },
       "REGISTRY": {
         "description": "Who may use which client, who reviews, and which automation sources are trusted."
+      },
+      "VECTORS": {
+        "description": "Vectorize index for semantic recall. Create it with `npx wrangler vectorize create keendreams-memory --dimensions=768 --metric=cosine`."
+      },
+      "AI": {
+        "description": "Workers AI, used for embeddings and for optional fact suggestions. Runs in your own account."
+      },
+      "SUGGEST_MODEL": {
+        "description": "Optional. Workers AI model used by `suggest_facts`. Set to `off` to turn suggestions off."
       }
     }
   },

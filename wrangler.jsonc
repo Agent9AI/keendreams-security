@@ -6,6 +6,8 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "observability": { "enabled": true },
   "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  "vectorize": [{ "binding": "VECTORS", "index_name": "keendreams-memory" }],
+  "ai": { "binding": "AI" },
   "durable_objects": {
     "bindings": [
       { "name": "CLIENT_MEMORY", "class_name": "ClientMemory" },
