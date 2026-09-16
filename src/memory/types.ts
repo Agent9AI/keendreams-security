@@ -17,7 +17,12 @@ export type WriteContext = {
   writesPerMinute: number;
 };
 
-export type WriteOptions = { writesPerMinute?: number; suggestedByModel?: string };
+export type WriteOptions = {
+  writesPerMinute?: number;
+  suggestedByModel?: string;
+  /** The Registry slug for this client, used as the Vectorize namespace. */
+  clientSlug?: string;
+};
 
 export type RecordEpisodeInput = { content: string; source: string; observedAt?: string };
 

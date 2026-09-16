@@ -1,4 +1,4 @@
-import { reset } from "cloudflare:test";
+import { reset, runDurableObjectAlarm } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
 import { recordEpisode } from "../src/memory/episodes";
 import {
@@ -11,7 +11,8 @@ import {
   markFailed,
   pendingCount,
 } from "../src/search/queue";
-import { contextAt, freshMemory, withSql } from "./helpers";
+import { ALICE, contextAt, freshMemory, withSql } from "./helpers";
+import { fakeBackend } from "./searchFixtures";
 
 afterEach(async () => {
   await reset();
@@ -103,5 +104,57 @@ describe("writes enqueue their own indexing", () => {
         `episode:${result.episodeId}`,
       ]);
     });
+  });
+});
+
+describe("draining the queue", () => {
+  it("indexes queued episodes under the client's namespace and clears them", async () => {
+    const stub = freshMemory();
+    const backend = fakeBackend();
+    await withSql(stub, (_sql, instance) => {
+      instance.setSearchBackend(backend);
+      instance.rememberSlug("acme");
+    });
+
+    await stub.recordEpisode(ALICE, { content: "web-prod-03 is exposed", source: "nessus" });
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+
+    expect(backend.upserted).toHaveLength(1);
+    expect(backend.upserted[0]?.namespace).toBe("acme");
+    expect(backend.upserted[0]?.id.startsWith("episode:")).toBe(true);
+    expect(backend.upserted[0]?.values).toHaveLength(768);
+    expect(await stub.queueStatus()).toEqual({ pending: 0, failed: 0 });
+  });
+
+  it("keeps the item and retries later when the backend is down", async () => {
+    const stub = freshMemory();
+    const backend = fakeBackend();
+    backend.failNext(1);
+    await withSql(stub, (_sql, instance) => instance.setSearchBackend(backend));
+
+    await stub.recordEpisode(ALICE, { content: "retry me", source: "nessus" });
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+
+    expect(backend.upserted).toHaveLength(0);
+    expect(await stub.queueStatus()).toEqual({ pending: 1, failed: 0 });
+  });
+
+  it("schedules nothing at all without a backend", async () => {
+    const stub = freshMemory();
+    await withSql(stub, (_sql, instance) => instance.setSearchBackend(null));
+
+    await stub.recordEpisode(ALICE, { content: "no backend here", source: "nessus" });
+    expect(await runDurableObjectAlarm(stub)).toBe(false);
+    expect(await stub.queueStatus()).toEqual({ pending: 1, failed: 0 });
+  });
+
+  it("falls back to the default namespace until the client names itself", async () => {
+    const stub = freshMemory();
+    const backend = fakeBackend();
+    await withSql(stub, (_sql, instance) => instance.setSearchBackend(backend));
+
+    await stub.recordEpisode(ALICE, { content: "unnamed client", source: "nessus" });
+    await runDurableObjectAlarm(stub);
+    expect(backend.upserted[0]?.namespace).toBe("default");
   });
 });
