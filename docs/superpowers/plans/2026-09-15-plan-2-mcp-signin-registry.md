@@ -24,6 +24,7 @@
 - MCP tool inputs are validated with zod at the boundary; tool failures return `isError: true` with a message that starts with a stable error code. Unexpected errors return `unavailable: …` without internal details.
 - Consent and upstream sign-in state live server-side in `OAUTH_KV` for 600 seconds and are consumed once.
 - Test RSA keys are generated at runtime with WebCrypto. No key material is committed.
+- Workers runtime types do not include DOM-only types such as `FormDataEntryValue`; use `unknown` and narrow.
 - No two paths may differ only by case. macOS and Windows treat them as one file, Linux does not; CI fails the build if any pair exists.
 
 ## File Structure
@@ -1182,7 +1183,7 @@ git commit -m "Add Registry Durable Object for modes, clients, members, allowlis
   - `toBase64Url(input: ArrayBuffer | Uint8Array): string`, `fromBase64Url(value: string): Uint8Array<ArrayBuffer>`.
   - `ONCE_TTL_SECONDS = 600`, `putOnce<T>(kv: KVNamespace, prefix: string, value: T, ttlSeconds?: number): Promise<string>`, `takeOnce<T>(kv: KVNamespace, prefix: string, id: string | null | undefined): Promise<T | null>`.
   - `type FetchLike = (input: string, init?: RequestInit) => Promise<Response>`, `class AccessError extends Error`, `pkcePair(): Promise<{ verifier: string; challenge: string }>`, `accessAuthorizeUrl(settings: AccessSettings, params: { redirectUri: string; state: string; challenge: string }): string`, `type UpstreamState = { oauthRequest: AuthRequest; codeVerifier: string }`, `exchangeCode(fetchFn: FetchLike, settings: AccessSettings, params: { code: string; codeVerifier: string; redirectUri: string }): Promise<string>`, `type IdentityClaims = { sub: string; email: string; name: string }`, `verifyIdToken(fetchFn: FetchLike, settings: AccessSettings, idToken: string, nowSeconds: number): Promise<IdentityClaims>`.
-  - `APPROVED_COOKIE`, `CSRF_COOKIE`, `CLEAR_CSRF_COOKIE`, `sign(secret: string, value: string): Promise<string>`, `verify(secret: string, signed: string | null | undefined): Promise<string | null>`, `readCookie(request: Request, name: string): string | null`, `approvedClients(request: Request, secret: string): Promise<string[]>`, `approvedClientsCookie(request: Request, secret: string, clientId: string): Promise<string>`, `newCsrfToken(): { token: string; cookie: string }`, `csrfMatches(request: Request, formToken: FormDataEntryValue | null): boolean`.
+  - `APPROVED_COOKIE`, `CSRF_COOKIE`, `CLEAR_CSRF_COOKIE`, `sign(secret: string, value: string): Promise<string>`, `verify(secret: string, signed: string | null | undefined): Promise<string | null>`, `readCookie(request: Request, name: string): string | null`, `approvedClients(request: Request, secret: string): Promise<string[]>`, `approvedClientsCookie(request: Request, secret: string, clientId: string): Promise<string>`, `newCsrfToken(): { token: string; cookie: string }`, `csrfMatches(request: Request, formToken: unknown): boolean`.
   - Test fixtures: `TEST_SETTINGS`, `testSigningKey(kid?: string)`, `signJwt(privateKey: CryptoKey, header: object, payload: object): Promise<string>`, `fakeFetch(routes: Record<string, (init?: RequestInit) => Response>)`.
 
 - [ ] **Step 1: Create `src/auth/types.ts` and `src/auth/encoding.ts`**
@@ -1881,7 +1882,7 @@ export function newCsrfToken(): { token: string; cookie: string } {
   };
 }
 
-export function csrfMatches(request: Request, formToken: FormDataEntryValue | null): boolean {
+export function csrfMatches(request: Request, formToken: unknown): boolean {
   const cookieToken = readCookie(request, CSRF_COOKIE);
   if (typeof formToken !== "string" || !cookieToken || formToken.length !== cookieToken.length) {
     return false;
