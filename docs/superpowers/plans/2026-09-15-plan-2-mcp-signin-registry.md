@@ -24,6 +24,7 @@
 - MCP tool inputs are validated with zod at the boundary; tool failures return `isError: true` with a message that starts with a stable error code. Unexpected errors return `unavailable: …` without internal details.
 - Consent and upstream sign-in state live server-side in `OAUTH_KV` for 600 seconds and are consumed once.
 - Test RSA keys are generated at runtime with WebCrypto. No key material is committed.
+- No two paths may differ only by case. macOS and Windows treat them as one file, Linux does not; CI fails the build if any pair exists.
 
 ## File Structure
 
@@ -37,7 +38,7 @@
 | `src/memory/schema.ts` | Adds `runMigrations`, used by both databases |
 | `src/registry/schema.ts` | Registry migrations |
 | `src/registry/registry.ts` | Mode, clients, members, allowlist, limits, access resolution |
-| `src/registry/Registry.ts` | Registry Durable Object RPC surface |
+| `src/registry/registry.ts` | Registry Durable Object RPC surface |
 | `src/auth/onceStore.ts` | Store a value in KV for a short time and consume it once |
 | `src/auth/access.ts` | PKCE, Access authorize URL, code exchange, ID token verification |
 | `src/auth/cookies.ts` | HMAC-signed approved-clients cookie, CSRF token |
@@ -364,7 +365,7 @@ git commit -m "Add MCP and OAuth dependencies, deploy settings and typed config"
 
 **Files:**
 - Modify: `src/memory/audit.ts` (add `AUDIT_SCHEMA`), `src/memory/schema.ts` (use `AUDIT_SCHEMA`, add `runMigrations`), `wrangler.jsonc`, `package.json` (`REGISTRY` description), `src/worker.ts`, `worker-configuration.d.ts`, `tests/helpers.ts`
-- Create: `src/registry/schema.ts`, `src/registry/registry.ts`, `src/registry/Registry.ts`, `tests/registry.test.ts`
+- Create: `src/registry/schema.ts`, `src/registry/store.ts`, `src/registry/registry.ts` (the Durable Object), `tests/registry.test.ts`
 
 **Interfaces:**
 - Consumes: `appendAudit`, `verifyAuditChain`, `type ChainCheck` (Plan 1 Task 4); `MemoryError` (Plan 1 Task 1); `clampLimit` (Plan 1 Task 5); `DEFAULT_WRITES_PER_MINUTE` (Plan 1 Task 5).
@@ -504,7 +505,7 @@ export function freshRegistry(): DurableObjectStub<Registry> {
 }
 ```
 
-and add `import type { Registry } from "../src/registry/Registry";` to the imports.
+and add `import type { Registry } from "../src/registry/registry";` to the imports.
 
 - [ ] **Step 6: Write the failing test `tests/registry.test.ts`**
 
@@ -672,7 +673,7 @@ describe("registry audit", () => {
 Run: `npx vitest run tests/registry.test.ts`
 Expected: FAIL (the `REGISTRY` binding's class `Registry` is not exported yet).
 
-- [ ] **Step 8: Create `src/registry/registry.ts`**
+- [ ] **Step 8: Create `src/registry/store.ts`**
 
 ```ts
 import { appendAudit } from "../memory/audit";
@@ -1027,9 +1028,9 @@ export function resolveAccess(sql: SqlStorage, query: AccessQuery): ClientAccess
 }
 ```
 
-- [ ] **Step 9: Create `src/registry/Registry.ts` and export it from `src/worker.ts`**
+- [ ] **Step 9: Create `src/registry/registry.ts` (the Durable Object) and export it from `src/worker.ts`**
 
-`src/registry/Registry.ts`:
+`src/registry/registry.ts`:
 
 ```ts
 import { DurableObject } from "cloudflare:workers";
@@ -1057,7 +1058,7 @@ import {
   setMode,
   setWriteLimit,
   writeLimit,
-} from "./registry";
+} from "./store";
 import { migrateRegistry } from "./schema";
 
 /** The single deployment-wide registry, addressed by name `registry`. */
@@ -1146,7 +1147,7 @@ export class Registry extends DurableObject<Env> {
 
 ```ts
 export { ClientMemory } from "./memory/ClientMemory";
-export { Registry } from "./registry/Registry";
+export { Registry } from "./registry/registry";
 
 export default {
   async fetch(): Promise<Response> {
@@ -2729,8 +2730,8 @@ import type { ClientMemory } from "../memory/ClientMemory";
 import { MemoryError } from "../memory/errors";
 import type { Principal } from "../memory/types";
 import type { FactOrigin } from "../policy/trust";
-import type { AccessRole } from "../registry/registry";
-import type { Registry } from "../registry/Registry";
+import type { Registry } from "../registry/registry";
+import type { AccessRole } from "../registry/store";
 
 export type ToolEnv = Env;
 export type ToolContext = {
@@ -3418,7 +3419,7 @@ import { type AuthEnv, createAuthHandler } from "./auth/handler";
 import { mcpApiHandler } from "./mcp/server";
 
 export { ClientMemory } from "./memory/ClientMemory";
-export { Registry } from "./registry/Registry";
+export { Registry } from "./registry/registry";
 
 const DAY_SECONDS = 24 * 60 * 60;
 const authHandler = createAuthHandler();
