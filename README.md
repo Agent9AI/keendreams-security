@@ -128,6 +128,40 @@ You can reproduce every line of this yourself with `npm test`.
 
 ---
 
+## The two pages your team actually uses
+
+Agents talk to this over MCP. People use two browser pages, and both ship with it.
+
+### The review queue, where facts become trusted
+
+`/review` is the only place a proposal can be confirmed. Each one arrives with the
+evidence it rests on, who proposed it, and any flags raised during ingestion. There
+is no MCP tool that does this, so an agent holding a valid token still cannot
+promote its own claim.
+
+![The review queue, listing proposed facts with the evidence behind each one](docs/images/review-queue.png)
+
+### The admin page, where you can check the thing is honest
+
+`/admin` is limited to the people named in `ADMIN_EMAILS`, because everything on it
+either grants trust or rewrites history.
+
+![The admin page, showing live binding probes and a verified audit chain](docs/images/admin.png)
+
+- **Deployment health.** Every row is a live probe rather than a reading of the
+  configuration: it queries your index, embeds a string, and asks your model for
+  schema-valid JSON. You find a broken binding here instead of in front of an
+  analyst. In demo mode the three cloud rows read **live only**, because a laptop
+  cannot reach Vectorize or Workers AI.
+- **Audit chain verification** for the client memory and the registry, naming the
+  first entry whose hash does not match.
+- **Rollback** to any audit entry. Decisions made after it return to proposed, and
+  whatever they superseded reopens. The rollback is itself an audit entry.
+- **Search index** status, with a retry for anything that gave up.
+- **Clients, members, reviewers, trusted automation sources and write limits.**
+
+---
+
 ## Where this pays off
 
 Four situations every vulnerability programme runs into. In each one the cost is
@@ -312,37 +346,6 @@ flowchart TD
 ```
 
 If Vectorize or Workers AI is unavailable, recall degrades to `keyword_only` and still answers, rather than failing.
-
----
-
-## The review queue
-
-`/review` is the only place a fact becomes trusted. It lists each proposal with the evidence it rests on, who proposed it, and any flags raised during ingestion.
-
-![The review queue](docs/images/review-queue.png)
-
-Every decision is written to a hash-chained, append-only audit log along with the reviewer and the time.
-
-### The admin page
-
-`/admin` is for the people named in `ADMIN_EMAILS`, because everything on it either
-grants trust or rewrites history.
-
-![The admin page, showing live binding probes and a verified audit chain](docs/images/admin.png)
-
-- **Deployment health.** Each row is a live probe, not a reading of the
-  configuration: it queries your index, embeds a string, and asks your model for
-  schema-valid JSON. You find out here rather than from a tool call failing in
-  front of an analyst.
-- **Audit chain verification** for the client memory and the registry, reporting
-  the first entry whose hash does not match.
-- **Rollback** to any audit entry. Decisions made after it return to proposed, and
-  whatever they superseded reopens. The rollback is itself an audit entry.
-- **Search index** status, with a retry for items that gave up.
-- **Clients, members, reviewers, trusted automation sources and write limits.**
-
-In demo mode the three cloud probes read **live only**, because a laptop cannot
-reach Vectorize or Workers AI. On a deployment they run for real.
 
 ---
 
