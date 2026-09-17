@@ -241,7 +241,7 @@ This is a memory system for security teams, so it is built against the ways memo
 - **Tokens are never logged**, returned, or written into memory.
 - Browser pages ship a strict CSP with no scripts at all, `frame-ancestors 'none'`, and CSRF tokens on every form.
 
-Secret scanning (gitleaks over full history), type checking, linting and 213 tests run on every push.
+Secret scanning (gitleaks over full history), type checking, linting, CodeQL and the full test suite run on every push.
 
 ---
 
@@ -293,7 +293,7 @@ Stated plainly, because a security tool that oversells itself is worse than usel
 
 ```bash
 npm install
-npm test          # 213 tests, fully offline
+npm test          # 221 tests, fully offline
 npm run typecheck
 npm run lint
 npm run demo      # localhost review queue with seeded evidence
