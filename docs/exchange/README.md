@@ -71,6 +71,8 @@ listing submission.
   by the end to end test suite and the deployed endpoints answer correctly, but a
   real Claude Code client has not yet completed a sign-in against a deployment
   with Cloudflare Access configured.
+- The pull request title must read `Add listing: KeenDreams Security Memory`, and
+  the description must carry the Contribution Agreement acceptance statement.
 
 ## Verified since the listing was first written
 
@@ -78,5 +80,3 @@ listing submission.
   infrastructure on 2026-09-17 (see the README's live verification table). The
   run found and fixed a bug that made every production suggestion fail.
 - The repository is public, so every link in the listing resolves.
-- The pull request title must read `Add listing: KeenDreams Security Memory`, and
-  the description must carry the Contribution Agreement acceptance statement.
