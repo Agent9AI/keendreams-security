@@ -109,7 +109,7 @@ If Vectorize or Workers AI is unavailable, recall degrades to `keyword_only` and
 
 ![The review queue](docs/images/review-queue.png)
 
-Every decision is written to a hash-chained, append-only audit log along with the reviewer and the time. `/admin` can verify the chain and roll back to any point.
+Every decision is written to a hash-chained, append-only audit log along with the reviewer and the time. Chain verification and rollback are implemented and tested on the memory itself, but the admin page that would expose them in a browser is not built yet, so today they are reachable only from code.
 
 ---
 
@@ -283,7 +283,7 @@ Stated plainly, because a security tool that oversells itself is worse than usel
 - **Vectorize and Workers AI are not exercised by the test suite.** Both are faked locally, because the Workers test runner cannot reach them offline. Their failure paths are tested; their success paths are proven only against a real deployment.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** If your chosen model is unreliable, set `SUGGEST_MODEL=off`. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
-- **`/admin` is minimal.** Mode, clients, members and the source allowlist are managed through Registry RPC for now.
+- **There is no admin page yet.** Chain verification, rollback, reindexing failed vector items, and managing mode, clients, members and the source allowlist all exist as tested operations, but reaching them means calling the Durable Objects directly rather than clicking something.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.
 - **No scheduled Tenable sync is included.** Ingestion is driven by an analyst or an agent you write.
 
