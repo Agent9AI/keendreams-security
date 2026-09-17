@@ -299,7 +299,7 @@ npm run lint
 npm run demo      # localhost review queue with seeded evidence
 ```
 
-Design and implementation notes live in [`docs/superpowers/`](docs/superpowers/).
+The architecture and the reasoning behind it are written up in [`docs/design.md`](docs/design.md).
 
 ---
 
