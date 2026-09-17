@@ -1,26 +1,49 @@
 # KeenDreams Security Memory
 
+### Your security agents keep re-investigating findings your team already closed. And an agent that believes whatever it reads is one poisoned scan result away from acting on an attacker's text.
+
+**KeenDreams fixes both.** It is an open source, evidence-backed memory that your
+agents and analysts share: what is vulnerable, what was remediated, what was
+accepted as risk, who decided, and when. Every fact cites the evidence it came
+from, and **only a human signed in through a browser can confirm one.**
+
 [![CI](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml)
 [![Secret scan](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-221%20passing-brightgreen.svg)](#development)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6b46c1.svg)](https://modelcontextprotocol.io)
 
-**The open source memory layer for custom security systems.** A remote [MCP](https://modelcontextprotocol.io) server that gives your security agents and analysts a shared, evidence-backed memory: what is vulnerable, what was remediated, what was accepted as risk, who decided, and when.
+It is a remote [MCP](https://modelcontextprotocol.io) server that runs entirely in
+**your own Cloudflare account**. No vendor API keys, no shared secrets, no
+telemetry. Nothing reaches the authors of this project.
 
-It runs entirely in **your own Cloudflare account**. There are no vendor API keys, no shared secrets, and no telemetry. Nothing is sent to the authors of this project.
+```bash
+git clone https://github.com/Agent9AI/keendreams-security && cd keendreams-security
+npm install && npm run demo      # no account, no config, no network
+```
 
-Every fact carries the evidence it came from. **Anything can propose a fact. Only a human, signed in through a browser, can confirm one.**
+Then open **http://localhost:8787/review**.
 
-![Confirming proposed facts in the review queue](docs/images/review-flow.gif)
+![A reviewer confirming proposed facts, and the queue emptying as each one is decided](docs/images/review-flow.gif)
+
+<sub>Three facts an agent proposed from a Tenable finding, an analyst note and a
+ticket. Each shows the evidence behind it. Until a human clicks Confirm, none of
+them will come back from a query.</sub>
+
+> **The one-sentence version:** anything can propose a fact, nothing can promote
+> itself, and every answer arrives with its provenance attached.
 
 ---
 
 ## Why this exists
 
-Security agents forget. Each session starts cold, re-reads the same scan output, and re-asks questions a human already answered. Worse, an agent that simply remembers whatever it was told is a liability: a vulnerability scanner's output, a pasted chat log, or a ticket comment can all carry text that looks like an instruction.
+The usual fix for a forgetful agent is to let it remember what it was told. For
+security work that trades one problem for a worse one, because scanner output,
+ticket comments and pasted chat logs are all attacker-reachable text.
 
-KeenDreams Security Memory takes the opposite position. Memory is a **knowledge graph of claims, each attached to the evidence that supports it**, and trust is something a person grants, never something a model assumes.
+KeenDreams takes the opposite position. Memory is a **knowledge graph of claims,
+each attached to the evidence that supports it**, and trust is something a person
+grants rather than something a model assumes.
 
 | Without a memory layer | With KeenDreams |
 |---|---|
