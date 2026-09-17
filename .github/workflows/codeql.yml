@@ -8,6 +8,7 @@ on:
   schedule:
     # Weekly, so a newly published query finds old code without waiting for a push.
     - cron: "17 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
