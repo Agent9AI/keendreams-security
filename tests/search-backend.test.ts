@@ -5,6 +5,7 @@ import {
   backendFromEnv,
   DEFAULT_SUGGEST_MODEL,
   EMBEDDING_DIMENSIONS,
+  modelText,
   type SearchEnv,
 } from "../src/search/backend";
 
@@ -39,3 +40,37 @@ describe("backendFromEnv", () => {
     expect(EMBEDDING_DIMENSIONS).toBe(768);
   });
 });
+
+describe("reading text out of a Workers AI response", () => {
+  // Shapes captured from @cf/meta/llama-3.3-70b-instruct-fp8-fast on a real
+  // account. With a JSON schema requested, `response` arrives already parsed.
+  it("accepts a plain string response", () => {
+    expect(modelText({ response: "ok" })).toBe("ok");
+  });
+
+  it("accepts a response the model already parsed as JSON", () => {
+    const text = modelText({ response: { facts: [] }, choices: [] });
+    expect(JSON.parse(text)).toEqual({ facts: [] });
+  });
+
+  it("falls back to the chat completion message content", () => {
+    const text = modelText({
+      choices: [{ message: { content: '{"facts": []}' } }],
+    });
+    expect(text).toBe('{"facts": []}');
+  });
+
+  it("reports a response with no text as unavailable", () => {
+    expect(memoryErrorCode(captureError(() => modelText({})))).toBe("unavailable");
+    expect(memoryErrorCode(captureError(() => modelText({ response: null })))).toBe("unavailable");
+  });
+});
+
+function captureError(fn: () => unknown): unknown {
+  try {
+    fn();
+  } catch (error) {
+    return error;
+  }
+  return null;
+}

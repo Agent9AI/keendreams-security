@@ -31,10 +31,27 @@ function unavailable(what: string, error: unknown): MemoryError {
   return new MemoryError("unavailable", `${what} is not available right now`);
 }
 
-function textOf(response: unknown): string {
-  const body = response as { response?: unknown };
-  if (typeof body?.response === "string") return body.response;
-  if (typeof response === "string") return response;
+/**
+ * The text of a Workers AI text-generation result.
+ *
+ * The shape depends on the request. A plain chat returns `response` as a string.
+ * With a JSON schema requested, models such as llama-3.3-70b return `response`
+ * already parsed into an object, and the raw text in the chat completion's
+ * `choices[0].message.content`. Accept all three rather than treating a
+ * perfectly good answer as missing.
+ */
+export function modelText(result: unknown): string {
+  if (typeof result === "string") return result;
+  const body = (result ?? {}) as {
+    response?: unknown;
+    choices?: { message?: { content?: unknown } }[];
+  };
+  if (typeof body.response === "string") return body.response;
+  if (typeof body.response === "object" && body.response !== null) {
+    return JSON.stringify(body.response);
+  }
+  const content = body.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
   throw new MemoryError("unavailable", "the model returned no text");
 }
 
@@ -108,7 +125,7 @@ export function backendFromEnv(env: SearchEnv): SearchBackend | null {
           temperature: 0,
           response_format: { type: "json_schema", json_schema: schema },
         });
-        return textOf(result);
+        return modelText(result);
       } catch (error) {
         if (error instanceof MemoryError) throw error;
         throw unavailable("the suggestion model", error);

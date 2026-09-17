@@ -1,0 +1,48 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "keendreams-security",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV"
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORS",
+      "index_name": "keendreams-memory",
+      "remote": true
+    }
+  ],
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CLIENT_MEMORY",
+        "class_name": "ClientMemory"
+      },
+      {
+        "name": "REGISTRY",
+        "class_name": "Registry"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ClientMemory"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["Registry"]
+    }
+  ]
+}
