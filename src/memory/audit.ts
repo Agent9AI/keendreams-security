@@ -38,7 +38,15 @@ export type AuditRow = {
 
 export type ChainCheck = { ok: true; rows: number } | { ok: false; firstBadSeq: number };
 
-/** Synchronous on purpose: it runs inside Durable Object transactions. */
+/**
+ * Synchronous on purpose: it runs inside Durable Object transactions.
+ *
+ * SHA-256 is the right primitive here and a password hash would be wrong. This
+ * is used for tamper-evident chaining of the audit log and for content-addressing
+ * episodes so duplicates collapse. Both need a fast, deterministic, unsalted
+ * digest. No credential is ever hashed by this function; credentials are removed
+ * from evidence at ingest by `redact.ts` instead.
+ */
 export function sha256Hex(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
