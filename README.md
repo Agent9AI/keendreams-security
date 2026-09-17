@@ -1,5 +1,11 @@
 # KeenDreams Security Memory
 
+[![CI](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml)
+[![Secret scan](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-221%20passing-brightgreen.svg)](#development)
+[![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6b46c1.svg)](https://modelcontextprotocol.io)
+
 **The open source memory layer for custom security systems.** A remote [MCP](https://modelcontextprotocol.io) server that gives your security agents and analysts a shared, evidence-backed memory: what is vulnerable, what was remediated, what was accepted as risk, who decided, and when.
 
 It runs entirely in **your own Cloudflare account**. There are no vendor API keys, no shared secrets, and no telemetry. Nothing is sent to the authors of this project.
@@ -22,6 +28,79 @@ KeenDreams Security Memory takes the opposite position. Memory is a **knowledge 
 | An agent re-reports a finding the team accepted as risk last month | The accepted risk is in memory with its expiry date |
 | An agent believes whatever a scan output says | Scan output is stored as quoted evidence, never as instructions |
 | Model-generated claims blend into facts | Suggestions are labelled `UNCONFIRMED` until a person confirms them |
+
+---
+
+## See it refuse to believe an agent
+
+This is real output, captured from the test suite, not an illustration.
+
+An agent reads a Tenable finding and records the evidence:
+
+```jsonc
+// record_episode
+{ "episodeId": "e528b7aa...", "redactions": 0, "flags": [], "parts": 1 }
+```
+
+It then proposes what the evidence means:
+
+```jsonc
+// assert_fact  asset:web-prod-03  HAS_VULN  cve:CVE-2026-1234
+{
+  "status": "proposed",
+  "confidenceLabel": "UNCONFIRMED",
+  "review_url": "https://your-worker/review?client=default"
+}
+```
+
+Now the important part. Ask the memory what it knows:
+
+```jsonc
+// recall "is web-prod-03 affected by anything critical"
+{ "search_mode": "keyword_only", "count": 0, "results": [] }
+```
+
+**Nothing.** The agent asserted it a moment ago, and the memory will not repeat it
+back, because no human has confirmed it. There is no flag to bypass this and no
+role that skips it.
+
+A reviewer opens `/review`, reads the evidence, and clicks Confirm. The same
+question, asked again:
+
+```jsonc
+// recall "is web-prod-03 affected by anything critical"
+{
+  "search_mode": "keyword_only",
+  "count": 1,
+  "results": [{
+    "subject": "asset:web-prod-03",
+    "predicate": "HAS_VULN",
+    "object": "cve:CVE-2026-1234",
+    "status": "trusted",
+    "confidenceLabel": "TRUSTED",
+    "confirmedBy": "alice@example.com",
+    "confirmedAt": "2026-09-17T15:32:13.387Z",
+    "evidence": {
+      "source": "tenable-hexa",
+      "quote": "Tenable plugin 201455: Apache Struts remote code execution on web-prod-03. Severity Critical, CVSS 9.8, first seen 2026-09-10, still present at last scan..."
+    }
+  }]
+}
+```
+
+The answer arrives with its provenance attached: who confirmed it, when, and the
+exact evidence it rests on. Ask `fact_history` and you get the hash-chained audit
+trail behind that one claim:
+
+```jsonc
+// fact_history  asset:web-prod-03  HAS_VULN  cve:CVE-2026-1234
+"audit": [
+  { "seq": 2, "actor": "alice@example.com", "action": "fact.assert",  "at": "...345Z" },
+  { "seq": 3, "actor": "alice@example.com", "action": "fact.confirm", "at": "...387Z" }
+]
+```
+
+You can reproduce every line of this yourself with `npm test`.
 
 ---
 
@@ -303,10 +382,38 @@ The architecture and the reasoning behind it are written up in [`docs/design.md`
 
 ---
 
+## Want it running in your stack this week?
+
+Everything here is MIT licensed and yours to run. Nothing is held back, there is
+no paid tier, and no feature is gated behind a conversation.
+
+That said, a memory layer is only as good as the decisions wired into it, and the
+setup that matters is the part this README cannot do for you: which sources your
+team trusts, who reviews what, and how it meets the tooling you already run.
+
+**Agent9.dev offers a deploy and integrate package:**
+
+- Deployment into **your** Cloudflare account, not ours. You own the Worker, the
+  data and the billing on day one, and you can fire us without migrating anything.
+- Cloudflare Access for SaaS configured against your existing identity provider,
+  with reviewers and administrators mapped to your actual teams.
+- The Hexa recipe connected to your Tenable One tenant, with the read-tool
+  allowlist tuned to your workflow.
+- Working sessions with the analysts and reviewers who will use it, because the
+  review queue only pays off if people trust it enough to use it.
+- Custom ingestion for the scanners, ticketing and chat tools you already run.
+
+[**Talk to Agent9.dev about an integration**](https://agent9.dev/keendreams-security?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security)
+
+We build agent infrastructure for security teams. If you would rather run it
+yourself, the entire thing is above, and issues and pull requests are welcome.
+
+---
+
 ## License
 
 MIT. Copyright Agent9.dev.
 
 ---
 
-<sub>Built by [Agent9.dev](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security). If you want this integrated into your security stack, [get in touch](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security).</sub>
+<sub>Built by <a href="https://agent9.dev/keendreams-security?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security">Agent9.dev</a>.</sub>

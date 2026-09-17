@@ -1,0 +1,72 @@
+# Contributing
+
+Issues and pull requests are welcome. This document says what the project cares
+about, so you can tell in advance whether a change is likely to land.
+
+## Getting set up
+
+```bash
+npm install
+npm run demo      # review queue on localhost, no account or configuration
+npm test          # the full suite, fully offline
+```
+
+Node 22 or later. Nothing here talks to the network during tests, and that is
+deliberate: a test suite that needs an account is a test suite people stop
+running.
+
+## The rules that are not negotiable
+
+These come from the threat model in [SECURITY.md](SECURITY.md). A change that
+breaks one of them will not be merged, even if it is convenient.
+
+1. **Nothing written over MCP starts trusted.** Not for an administrator, not for
+   a privileged automation, not for a model. If you find yourself adding a
+   parameter that lets a caller set a fact's status, the design has gone wrong.
+2. **Only a browser session can confirm a fact.** There is no MCP tool for it and
+   there should never be one.
+3. **Every fact cites evidence.** No path may create a fact without an episode
+   behind it.
+4. **Nothing is edited or deleted.** Corrections supersede. This is what keeps
+   `as_of` honest, so an in-place update breaks the audit story even when it
+   looks tidier.
+5. **Episode text is data, never instructions.** It is stored quoted, and any
+   prompt that includes it must say so and delimit it.
+6. **No secret is ever logged, returned in a response, or written into memory.**
+7. **No component may send data anywhere the deployer did not configure.** There
+   is no telemetry in this project and there will not be any.
+
+## How changes are expected to arrive
+
+Tests first. Every feature in this repository was built by writing a failing
+test, watching it fail for the expected reason, then making it pass. It is not
+ceremony: it caught a false-trust bug, a cross-tenant leak in a query, and an
+unhandled promise rejection that would otherwise have been intermittent.
+
+Before opening a pull request:
+
+```bash
+npm test && npm run typecheck && npm run lint
+```
+
+CI runs those plus gitleaks over the full history, and CodeQL. All of it must be
+green.
+
+## House style
+
+- Files stay under 500 lines. When one grows past that, it is usually doing two
+  jobs.
+- Error messages start with a stable code (`invalid_input`, `forbidden_client`,
+  `not_found`, `too_large`, `rate_limited`, `unavailable`) so agents can react to
+  them without parsing prose.
+- Comments explain why, not what. If a line needs a comment to say what it does,
+  rename something instead.
+- No em-dashes in documentation, UI copy or error messages.
+- Timestamps are ISO 8601 strings, because they sort correctly as text.
+- Never commit a credential, even a fake one. Test fixtures assemble fake secrets
+  from fragments at runtime so no literal matches a scanner rule.
+
+## Reporting a vulnerability
+
+Please do not open a public issue. See [SECURITY.md](SECURITY.md) for private
+disclosure through GitHub Security Advisories.
