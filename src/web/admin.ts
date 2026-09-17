@@ -21,17 +21,17 @@ const DEMO_CHECKS: Check[] = [
   { name: "Workers KV", state: "ok", detail: "Local simulation." },
   {
     name: "Vectorize",
-    state: "absent",
+    state: "offline",
     detail: "Demo mode is offline. On a deployment this row is a live probe of your index.",
   },
   {
     name: "Workers AI (embeddings)",
-    state: "absent",
+    state: "offline",
     detail: "Demo mode is offline. On a deployment this row embeds a probe string.",
   },
   {
     name: "Workers AI (suggestions)",
-    state: "absent",
+    state: "offline",
     detail: "Demo mode is offline. On a deployment this row asks your model for schema-valid JSON.",
   },
 ];
@@ -81,9 +81,15 @@ type AdminView = {
   problem: string | null;
 };
 
-function pill(state: "ok" | "failed" | "absent"): string {
-  const cls = state === "ok" ? "ok" : state === "failed" ? "bad" : "off";
-  const label = state === "ok" ? "working" : state === "failed" ? "failing" : "not set up";
+const PILLS: Record<Check["state"], { cls: string; label: string }> = {
+  ok: { cls: "ok", label: "working" },
+  failed: { cls: "bad", label: "failing" },
+  absent: { cls: "off", label: "not set up" },
+  offline: { cls: "off", label: "live only" },
+};
+
+function pill(state: Check["state"]): string {
+  const { cls, label } = PILLS[state];
   return `<span class="pill ${cls}">${label}</span>`;
 }
 

@@ -5,8 +5,15 @@ This directory holds the listing that gets copied into a fork of
 when the submission is made. The path here mirrors the path there, so the file
 moves across unchanged.
 
-`mcp-servers/keendreams-security-memory.md` validates cleanly against Tenable's
-`validator.py` as of 2026-09-17.
+Two listings are prepared, one per pull request as Tenable prefers:
+
+| File | Type | Submit |
+|---|---|---|
+| `mcp-servers/keendreams-security-memory.md` | MCP server | First |
+| `skills/hexa-to-memory.md` | Skill | After the first merges |
+
+Both validate cleanly against Tenable's `validator.py`, re-downloaded and re-run
+on 2026-09-17.
 
 ## How the listing was checked
 
@@ -64,7 +71,12 @@ listing submission.
   by the end to end test suite and the deployed endpoints answer correctly, but a
   real Claude Code client has not yet completed a sign-in against a deployment
   with Cloudflare Access configured.
-- The repository is private. Every link in the listing, and the Deploy button,
-  resolve only once it is public.
+
+## Verified since the listing was first written
+
+- Vectorize, Workers AI embeddings and `suggest_facts` were run against real
+  infrastructure on 2026-09-17 (see the README's live verification table). The
+  run found and fixed a bug that made every production suggestion fail.
+- The repository is public, so every link in the listing resolves.
 - The pull request title must read `Add listing: KeenDreams Security Memory`, and
   the description must carry the Contribution Agreement acceptance statement.

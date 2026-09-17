@@ -10,7 +10,7 @@ from, and **only a human signed in through a browser can confirm one.**
 [![CI](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/ci.yml)
 [![Secret scan](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Agent9AI/keendreams-security/actions/workflows/secret-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-221%20passing-brightgreen.svg)](#development)
+[![Tests](https://img.shields.io/badge/tests-237%20passing-brightgreen.svg)](#development)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6b46c1.svg)](https://modelcontextprotocol.io)
 
 It is a remote [MCP](https://modelcontextprotocol.io) server that runs entirely in
@@ -27,8 +27,9 @@ Then open **http://localhost:8787/review**.
 ![A reviewer confirming proposed facts, and the queue emptying as each one is decided](docs/images/review-flow.gif)
 
 <sub>Three facts an agent proposed from a Tenable finding, an analyst note and a
-ticket. Each shows the evidence behind it. Until a human clicks Confirm, none of
-them will come back from a query.</sub>
+ticket, each shown with the evidence behind it. Until a human clicks Confirm, none
+of them will come back from a query. The last frame is the admin page verifying
+that every one of those decisions is intact in the hash-chained audit log.</sub>
 
 > **The one-sentence version:** anything can propose a fact, nothing can promote
 > itself, and every answer arrives with its provenance attached.
@@ -320,7 +321,28 @@ If Vectorize or Workers AI is unavailable, recall degrades to `keyword_only` and
 
 ![The review queue](docs/images/review-queue.png)
 
-Every decision is written to a hash-chained, append-only audit log along with the reviewer and the time. Chain verification and rollback are implemented and tested on the memory itself, but the admin page that would expose them in a browser is not built yet, so today they are reachable only from code.
+Every decision is written to a hash-chained, append-only audit log along with the reviewer and the time.
+
+### The admin page
+
+`/admin` is for the people named in `ADMIN_EMAILS`, because everything on it either
+grants trust or rewrites history.
+
+![The admin page, showing live binding probes and a verified audit chain](docs/images/admin.png)
+
+- **Deployment health.** Each row is a live probe, not a reading of the
+  configuration: it queries your index, embeds a string, and asks your model for
+  schema-valid JSON. You find out here rather than from a tool call failing in
+  front of an analyst.
+- **Audit chain verification** for the client memory and the registry, reporting
+  the first entry whose hash does not match.
+- **Rollback** to any audit entry. Decisions made after it return to proposed, and
+  whatever they superseded reopens. The rollback is itself an audit entry.
+- **Search index** status, with a retry for items that gave up.
+- **Clients, members, reviewers, trusted automation sources and write limits.**
+
+In demo mode the three cloud probes read **live only**, because a laptop cannot
+reach Vectorize or Workers AI. On a deployment they run for real.
 
 ---
 
@@ -491,10 +513,11 @@ This repository ships [`SKILL.md`](SKILL.md), a `/hexa-to-memory` skill for Clau
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
-- **Vectorize and Workers AI are not exercised by the test suite.** Both are faked locally, because the Workers test runner cannot reach them offline. Their failure paths are tested; their success paths are proven only against a real deployment.
-- **`suggest_facts` depends on a model returning schema-valid JSON.** If your chosen model is unreliable, set `SUGGEST_MODEL=off`. Suggestions are a convenience, not a dependency.
+- **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
+- **Sign-in has not yet been exercised end to end against a live Cloudflare Access application, and no real Claude Code client has completed that sign-in.** The OAuth flow is covered by tests against a faithful stand-in for Access, and the deployed endpoints answer correctly, but that last hop has not run for real.
+- **The Tenable Hexa recipe has not been run against a live Tenable One tenant.** Its safety design, an explicit allowlist of read tools, is documented and reviewable, but the recipe itself is unverified in production.
+- **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
-- **There is no admin page yet.** Chain verification, rollback, reindexing failed vector items, and managing mode, clients, members and the source allowlist all exist as tested operations, but reaching them means calling the Durable Objects directly rather than clicking something.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.
 - **No scheduled Tenable sync is included.** Ingestion is driven by an analyst or an agent you write.
 
@@ -504,13 +527,44 @@ Stated plainly, because a security tool that oversells itself is worse than usel
 
 ```bash
 npm install
-npm test          # 221 tests, fully offline
+npm test          # 237 tests, fully offline
+npm run verify:live   # against your own Cloudflare account, see below
 npm run typecheck
 npm run lint
 npm run demo      # localhost review queue with seeded evidence
 ```
 
 The architecture and the reasoning behind it are written up in [`docs/design.md`](docs/design.md).
+
+### Verified against live infrastructure
+
+`npm test` runs offline, which means Vectorize and Workers AI are stand-ins there.
+So they were also run for real, on 2026-09-17, against a Cloudflare account:
+
+| Check | Result |
+|---|---|
+| Workers KV, Vectorize, embeddings, suggestions | All four health probes passed |
+| Embedding model | 768 dimensions, matching the index |
+| Queue drain, embed and upsert | Completed in about one second |
+| New vector becomes queryable | 69 s and 121 s on two runs |
+| `recall` on a question phrased differently from the evidence | Answered in `hybrid` mode with the confirmed fact |
+| `suggest_facts` reading a change ticket | Proposed three correct relationships (ownership, remediation, related ticket), dropped one malformed, stored all as unconfirmed |
+
+That run also caught a real bug the offline suite could not: with a JSON schema
+requested, the default model returns its answer already parsed, and the first
+version of this code only accepted text, so every suggestion failed in
+production. It was fixed test first, from the response shapes the real model
+returned.
+
+To repeat the verification in your own account:
+
+```bash
+npx wrangler vectorize create keendreams-memory --dimensions=768 --metric=cosine
+CLOUDFLARE_ACCOUNT_ID=<your account id> npm run verify:live
+```
+
+It makes a handful of Workers AI calls and writes three vectors into a throwaway
+namespace, then deletes them.
 
 ---
 

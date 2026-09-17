@@ -2,7 +2,8 @@ import { backendFromEnv, EMBEDDING_DIMENSIONS, type SearchEnv } from "../search/
 
 export type Check = {
   name: string;
-  state: "ok" | "failed" | "absent";
+  /** `offline` is demo mode only: the probe exists but cannot run on a laptop. */
+  state: "ok" | "failed" | "absent" | "offline";
   detail: string;
 };
 
