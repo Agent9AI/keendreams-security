@@ -11,6 +11,23 @@ updates:
       dev-dependencies:
         dependency-type: development
         update-types: ["minor", "patch"]
+    ignore:
+      # These three majors are pinned on purpose. Security patches within the
+      # pinned major still come through; only the major bump is suppressed.
+
+      # @cloudflare/vitest-plugin 1.1.10 declares `vitest: ^4.1.0` as a peer, so
+      # vitest 5 cannot resolve at all. Revisit when the plugin supports it.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+
+      # vite is held at 7.3.6 through `overrides` because npm 10's arborist
+      # crashes resolving vite 8's devtools peer graph. See the Plan 1 notes.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+
+      # The types should track the runtime, and Workers runs Node 22.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
