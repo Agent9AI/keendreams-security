@@ -120,7 +120,11 @@ function renderReview(options: PageOptions): Response {
 <main>
   <div class="head">
     <h1>Review queue</h1>
-    <span class="who">${escapeHtml(options.session.email)} &middot; ${escapeHtml(options.role)} &middot; client <span class="target">${escapeHtml(options.slug)}</span></span>
+    <span class="who">${escapeHtml(options.session.email)} &middot; ${escapeHtml(options.role)} &middot; client <span class="target">${escapeHtml(options.slug)}</span>${
+      options.role === "admin"
+        ? ` &middot; <a href="/admin?client=${encodeURIComponent(options.slug)}">administration</a>`
+        : ""
+    }</span>
   </div>
   ${demoBanner}
   <p>${options.proposals.length} waiting, ${options.trustedCount} already confirmed.

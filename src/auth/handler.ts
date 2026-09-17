@@ -6,6 +6,7 @@ import {
   SETTING_NAMES,
   SetupError,
 } from "../config";
+import { adminResponse } from "../web/admin";
 import { DEMO_IDENTITY, demoCookieKey, isDemoMode } from "../web/demo";
 import { reviewResponse } from "../web/review";
 import { setupPage } from "../web/setup";
@@ -99,13 +100,16 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
 
       // Demo mode answers only on loopback and needs no Access application, so it
       // is resolved before the settings that a real deployment requires.
-      if (url.pathname === "/review" && isDemoMode(env, url)) {
+      const browserPage = url.pathname === "/review" || url.pathname === "/admin";
+      const page = url.pathname === "/admin" ? adminResponse : reviewResponse;
+
+      if (browserPage && isDemoMode(env, url)) {
         const key = demoCookieKey();
         const session = await readSession(request, key, deps.now());
         if (session === null) {
           return redirect(url.toString(), [await sessionCookie(key, DEMO_IDENTITY, deps.now())]);
         }
-        return reviewResponse(request, env, session);
+        return page(request, env, session);
       }
 
       let settings: AccessSettings;
@@ -118,15 +122,15 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
         throw error;
       }
 
-      if (url.pathname === "/review") {
+      if (browserPage) {
         const session = await readSession(request, settings.cookieKey, deps.now());
         if (session === null) {
           if (request.method !== "GET") {
-            return messagePage("Your session expired", "Open the review page again.", 403);
+            return messagePage("Your session expired", "Open the page again.", 403);
           }
           return startBrowserSignIn(env, settings, request, `${url.pathname}${url.search}`);
         }
-        return reviewResponse(request, env, session);
+        return page(request, env, session);
       }
 
       if (url.pathname === "/authorize" && request.method === "GET") {
