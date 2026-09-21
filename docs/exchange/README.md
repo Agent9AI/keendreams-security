@@ -77,6 +77,6 @@ listing submission.
 ## Verified since the listing was first written
 
 - Vectorize, Workers AI embeddings and `suggest_facts` were run against real
-  infrastructure on 2026-09-17 (see the README's live verification table). The
+  infrastructure on 2026-09-17 (see the [live verification record](../verification.md#live-infrastructure)). The
   run found and fixed a bug that made every production suggestion fail.
 - The repository is public, so every link in the listing resolves.

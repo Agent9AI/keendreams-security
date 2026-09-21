@@ -34,7 +34,7 @@ confirms it in a browser.
 
 ## How it works
 
-Hexa exposes roughly ninety tools in one server, and they are not all reads. Its
+Hexa exposes read and write tools in the same server. Its
 documented tools include ones that launch scans, create tickets, notify
 assignees and apply tags. A skill that let a model choose freely among them could
 start a scan or message a team on a production estate while trying to triage.

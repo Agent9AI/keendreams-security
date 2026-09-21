@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/Agent9AI/keendreams-security/security/advisories/new
+    about: Please keep vulnerabilities and credentials out of public issues.
+  - name: Deployment and documentation
+    url: https://github.com/Agent9AI/keendreams-security/blob/main/docs/README.md
+    about: Find setup instructions, tool reference, and current limitations.

@@ -15,14 +15,20 @@ made about them. The threats it is built against are, in order:
 
 1. **Memory poisoning** (OWASP Agentic Security Initiative, ASI06). Untrusted text
    reaching the memory and later being treated as established fact. Every fact
-   cites the evidence it came from, nothing written over MCP starts trusted, and
-   only a human signed in through a browser can confirm a fact.
+   cites the evidence it came from. Ordinary MCP writes and model suggestions
+   begin as proposals, and only a signed-in browser reviewer can confirm one.
+   Administrators may explicitly allowlist an automation identity and source to
+   write trusted facts directly; that source is part of the trust boundary.
 2. **Cross-tenant leakage.** Each client's memory lives in its own Durable Object
    with its own SQLite database and its own Vectorize namespace.
 3. **Credential capture.** Evidence is redacted on ingest. Tokens are never
    logged, returned in a response, or written into memory.
 4. **Silent tampering.** The audit log is append-only, enforced by database
    triggers, and hash-chained so a modified row can be detected.
+
+The [security model](../docs/security.md) describes the implemented controls,
+data flows, and their limits. The [verification record](../docs/verification.md)
+distinguishes completed checks from integrations awaiting live validation.
 
 ## What is out of scope
 

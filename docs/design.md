@@ -1,5 +1,12 @@
 # KeenDreams Security Memory: Design
 
+> This is the original design record and launch plan. For current implemented
+> behavior, use the [architecture guide](architecture.md); for completed checks
+> and outstanding integrations, use [verification](verification.md).
+
+Runtime paths such as `src/` below are relative to the self-contained `worker/`
+application. The Hexa skill and this design record remain outside that directory.
+
 - **Date:** 2026-09-15
 - **Status:** Design approved section by section, including the business layer (section 15)
 - **Repo:** `Agent9AI/keendreams-security` (MIT)
@@ -41,7 +48,7 @@ GitHub login, MCP resources and prompts.
 
 ## 3. Deployment model
 
-The README "Deploy to Cloudflare" button copies the public repo into the
+The README "Deploy to Cloudflare" button copies the `worker/` application into the
 deployer's GitHub account and creates, in the deployer's Cloudflare account:
 
 | Binding | Type | Purpose |
@@ -52,7 +59,7 @@ deployer's GitHub account and creates, in the deployer's Cloudflare account:
 | `AI` | Workers AI | Embeddings and fact suggestions |
 | `OAUTH_KV` | KV namespace | OAuth provider grant and token storage |
 
-The button prompts for settings named in `.dev.vars.example` (names only, no
+The button prompts for settings named in `docs/deployment/.dev.vars.example` (names only, no
 values in the repo):
 
 ```
@@ -455,4 +462,3 @@ No component sends data to the project authors.
 | Hexa MCP read-only tool names (endpoint, transport and auth header confirmed from Tenable's documentation 2026-09-16; the ~90 tools are not enumerated there and mix reads with writes) | Capture `tools/list` live; the skill allowlists only confirmed read tools and never calls the documented write tools listed in section 9 |
 | Workers AI model reliably returns schema-valid JSON for `suggest_facts` | Try another model; ship `suggest_facts` disabled by default if none qualifies |
 | Claude Desktop remote OAuth connection works | Omit Claude Desktop from `compatible_clients` |
-

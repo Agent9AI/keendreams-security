@@ -12,12 +12,12 @@
     "dev": "wrangler dev",
     "demo": "wrangler dev --local --var DEMO_MODE:on",
     "deploy": "wrangler deploy",
-    "types": "wrangler types",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "types": "wrangler types src/worker-configuration.d.ts",
+    "typecheck": "tsc --noEmit -p src && tsc --noEmit -p tests",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "vitest run",
-    "verify:live": "vitest run --config vitest.live.config.ts --disable-console-intercept"
+    "test": "vitest run --config tests/vitest.config.ts",
+    "verify:live": "vitest run --config tests/vitest.live.config.ts --disable-console-intercept"
   },
   "overrides": {
     "vite": "7.3.6"

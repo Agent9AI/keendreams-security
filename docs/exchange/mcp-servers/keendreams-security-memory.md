@@ -49,7 +49,9 @@ prompts_exposed: []
 A remote MCP server that gives security agents and the analysts working alongside them a
 shared memory with a property most memory layers lack: nothing in it is believed because
 something asserted it. Every fact points at the evidence it came from, and the only way a
-fact becomes trusted is a person confirming it in a browser.
+proposal becomes trusted is a person confirming it in a browser. Administrators
+may separately allowlist a specific automation identity and source to write
+trusted facts directly.
 
 ## What it does
 
@@ -62,15 +64,15 @@ memory as ground truth will happily act on a sentence someone planted there.
 This server stores memory as a graph of claims, each attached to quoted evidence, and keeps
 the decision about what is true outside the agent entirely.
 
-- **Nothing written over MCP starts trusted.** Not for an administrator, not for a
-  privileged automation, not for the model that produced it. The status a write receives is
-  decided by policy, never by the caller. The single exception is an identity an
+- **The caller cannot choose trust.** Ordinary MCP writes and model suggestions
+  start as proposals. The status a write receives is decided by policy, never by
+  a caller-supplied field. The single exception is an identity an
   administrator has explicitly allowlisted for one named source, which is a deliberate act
   with an audit entry attached.
 - **Proposals are labelled, loudly.** Every fact carries a `confidenceLabel`, so an agent
   reading `UNCONFIRMED` in a tool result cannot quietly treat it as settled. `recall` and
   `find_facts` exclude unconfirmed facts by default.
-- **Nothing is edited or deleted.** A correction supersedes its predecessor and the older
+- **Previous versions stay auditable.** A correction supersedes its predecessor and the older
   version stays readable. This is what makes `as_of` answerable: asking what the team
   believed before an incident returns what they actually believed, not today's view
   backdated.

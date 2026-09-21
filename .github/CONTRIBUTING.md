@@ -6,6 +6,7 @@ about, so you can tell in advance whether a change is likely to land.
 ## Getting set up
 
 ```bash
+cd worker
 npm install
 npm run demo      # review queue on localhost, no account or configuration
 npm test          # the full suite, fully offline
@@ -20,16 +21,17 @@ running.
 These come from the threat model in [SECURITY.md](SECURITY.md). A change that
 breaks one of them will not be merged, even if it is convenient.
 
-1. **Nothing written over MCP starts trusted.** Not for an administrator, not for
-   a privileged automation, not for a model. If you find yourself adding a
-   parameter that lets a caller set a fact's status, the design has gone wrong.
+1. **The caller cannot choose trust.** Ordinary MCP writes and every model
+   suggestion start as proposals. Only an administrator's explicit allowlist of
+   an automation identity and source can make an incoming assertion trusted.
+   Never add an input parameter that lets a caller set a fact's status.
 2. **Only a browser session can confirm a fact.** There is no MCP tool for it and
    there should never be one.
 3. **Every fact cites evidence.** No path may create a fact without an episode
    behind it.
-4. **Nothing is edited or deleted.** Corrections supersede. This is what keeps
-   `as_of` honest, so an in-place update breaks the audit story even when it
-   looks tidier.
+4. **Keep prior versions and the audit trail.** Corrections supersede prior facts.
+   Status and observation metadata may change, but evidence, earlier versions,
+   and decision history must stay available for `as_of` and auditing.
 5. **Episode text is data, never instructions.** It is stored quoted, and any
    prompt that includes it must say so and delimit it.
 6. **No secret is ever logged, returned in a response, or written into memory.**
@@ -53,6 +55,11 @@ CI runs those plus gitleaks over the full history, and CodeQL. All of it must be
 green.
 
 ## House style
+
+Keep the root focused on entry points. Runtime code and configuration belong in
+`worker/`, operating guides in `docs/`, and community files
+in `.github/`. Maintain the [documentation index](../docs/README.md) when adding a guide.
+Regenerate bindings with `npm run types` after changing Wrangler configuration.
 
 - Files stay under 500 lines. When one grows past that, it is usually doing two
   jobs.

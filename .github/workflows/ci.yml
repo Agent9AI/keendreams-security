@@ -10,11 +10,15 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check for paths that differ only by case
+        working-directory: .
         run: |
           duplicates=$(git ls-files | tr 'A-Z' 'a-z' | sort | uniq -d)
           if [ -n "$duplicates" ]; then
@@ -28,6 +32,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: worker/package-lock.json
 
       - run: npm ci
       - run: npm run typecheck
