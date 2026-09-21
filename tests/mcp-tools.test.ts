@@ -18,7 +18,7 @@ async function evidence(props = ANALYST, source = "analyst-note") {
 }
 
 describe("tool surface", () => {
-  it("exposes the nine memory tools and marks the read-only ones", async () => {
+  it("exposes the nine memory tools with all four behavior hints", async () => {
     const tools = await listTools(ANALYST);
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       "assert_fact",
@@ -42,6 +42,14 @@ describe("tool surface", () => {
       "list_proposals",
       "recall",
     ]);
+    for (const tool of tools) {
+      expect(tool.annotations, tool.name).toEqual({
+        readOnlyHint: readOnly.includes(tool.name),
+        destructiveHint: tool.name === "assert_fact",
+        idempotentHint: readOnly.includes(tool.name),
+        openWorldHint: false,
+      });
+    }
   });
 
   it("refuses requests without a signed-in identity", async () => {

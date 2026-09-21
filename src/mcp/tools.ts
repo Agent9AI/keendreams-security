@@ -7,14 +7,27 @@ import { labelFact, run } from "./results";
 const CLIENT = {
   client: z.string().optional().describe("Client slug. Leave this out in single-team deployments."),
 };
-const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false } as const;
-const WRITES = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+// All tools stay within the deployment's memory, index and configured model.
+const READ_ONLY = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+// Even deduplicated episode writes consume quota. Fact writes also update
+// observation/audit state, and another model run can propose different facts.
+const WRITES = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+} as const;
 
 function reviewUrl(ctx: ToolContext, slug: string): string {
   return `${ctx.origin}/review?client=${encodeURIComponent(slug)}`;
 }
 
-/** Registers the seven memory tools on a per-request server instance. */
+/** Registers the nine memory tools on a per-request server instance. */
 export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "record_episode",
@@ -72,7 +85,8 @@ export function registerMemoryTools(server: McpServer, ctx: ToolContext): void {
           .optional()
           .describe("Why, in one or two sentences. Required for ACCEPTED_RISK."),
       }),
-      annotations: WRITES,
+      // Allowlisted assertions can supersede existing trusted facts.
+      annotations: { ...WRITES, destructiveHint: true },
     },
     async (input) =>
       run(async () => {
