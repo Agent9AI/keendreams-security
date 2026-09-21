@@ -72,7 +72,7 @@
     "@biomejs/biome": "2.5.13",
     "@cloudflare/vitest-plugin": "1.1.10",
     "@types/node": "22.20.3",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vite": "7.3.6",
     "vitest": "4.1.11",
     "wrangler": "4.132.0"
