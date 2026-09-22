@@ -126,6 +126,23 @@ describe("POST /authorize", () => {
     expect(cookies).toContain("__Host-kd_csrf=;");
   });
 
+  it("accepts the one-time form token when the browser omits the CSRF cookie", async () => {
+    const { call } = await setup();
+    const consent = await call(authorizeUrl());
+    const html = await consent.text();
+    const response = await call("/authorize", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        action: "approve",
+        consent_id: inputValue(html, "consent_id"),
+        csrf: inputValue(html, "csrf"),
+      }),
+    });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location") ?? "").toContain(TEST_SETTINGS.authorizationUrl);
+  });
+
   it("refuses a form without a matching CSRF token", async () => {
     const { call } = await setup();
     const consent = await call(authorizeUrl());
@@ -183,7 +200,7 @@ describe("POST /authorize", () => {
         }),
       });
     expect((await send()).status).toBe(302);
-    expect((await send()).status).toBe(400);
+    expect((await send()).status).toBe(403);
   });
 });
 

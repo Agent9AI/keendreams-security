@@ -20,13 +20,7 @@ import {
   verifyIdToken,
 } from "./access";
 import { messagePage, renderConsent } from "./consent";
-import {
-  approvedClients,
-  approvedClientsCookie,
-  CLEAR_CSRF_COOKIE,
-  csrfMatches,
-  newCsrfToken,
-} from "./cookies";
+import { approvedClients, approvedClientsCookie, CLEAR_CSRF_COOKIE, newCsrfToken } from "./cookies";
 import { putOnce, takeOnce } from "./onceStore";
 import { readSession, sessionCookie } from "./session";
 import type { AuthProps } from "./types";
@@ -36,6 +30,8 @@ export type AuthDeps = { fetch: FetchLike; now: () => number };
 
 const CONSENT_PREFIX = "consent";
 const UPSTREAM_PREFIX = "upstream";
+
+type ConsentState = { oauthRequest: AuthRequest; csrfToken: string };
 
 const DEFAULT_DEPS: AuthDeps = {
   fetch: (url, init) => fetch(url, init),
@@ -155,8 +151,11 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
         if ((await approvedClients(request, settings.cookieKey)).includes(client.clientId)) {
           return startAccessSignIn(env, settings, request, oauthRequest);
         }
-        const consentId = await putOnce<AuthRequest>(env.OAUTH_KV, CONSENT_PREFIX, oauthRequest);
         const csrf = newCsrfToken();
+        const consentId = await putOnce<ConsentState>(env.OAUTH_KV, CONSENT_PREFIX, {
+          oauthRequest,
+          csrfToken: csrf.token,
+        });
         return renderConsent({
           clientName: client.clientName ?? client.clientId,
           redirectHost: new URL(oauthRequest.redirectUri).host,
@@ -168,26 +167,24 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
 
       if (url.pathname === "/authorize" && request.method === "POST") {
         const form = await request.formData();
-        if (!csrfMatches(request, form.get("csrf"))) {
+        const consentId = form.get("consent_id");
+        const consent = await takeOnce<ConsentState>(
+          env.OAUTH_KV,
+          CONSENT_PREFIX,
+          typeof consentId === "string" ? consentId : null,
+        );
+        if (
+          !consent ||
+          typeof form.get("csrf") !== "string" ||
+          form.get("csrf") !== consent.csrfToken
+        ) {
           return messagePage(
             "This form expired",
             "Start the sign-in again from your MCP client.",
             403,
           );
         }
-        const consentId = form.get("consent_id");
-        const oauthRequest = await takeOnce<AuthRequest>(
-          env.OAUTH_KV,
-          CONSENT_PREFIX,
-          typeof consentId === "string" ? consentId : null,
-        );
-        if (!oauthRequest) {
-          return messagePage(
-            "This approval expired",
-            "Start the sign-in again from your MCP client.",
-            400,
-          );
-        }
+        const oauthRequest = consent.oauthRequest;
         if (form.get("action") !== "approve") {
           const denied = new URL(oauthRequest.redirectUri);
           denied.searchParams.set("error", "access_denied");
