@@ -18,6 +18,7 @@ tags:
 domains: ["vulnerability-management", "ai-security"]
 integrations: ["Tenable"]
 date_added: 2026-09-17
+contribution_agreement_date: 2026-09-22T16:37:44Z
 works_with_tenable_hexa_mcp: false
 transport: "http"
 runtime: "node"

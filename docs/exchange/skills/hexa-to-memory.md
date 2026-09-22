@@ -9,6 +9,7 @@ tags: ["triage", "tenable-hexa", "risk-acceptance", "false-positives", "human-in
 domains: ["vulnerability-management", "ai-security"]
 integrations: ["Tenable", "Tenable Hexa AI MCP"]
 date_added: 2026-09-17
+contribution_agreement_date: 2026-09-22T16:37:44Z
 works_with_tenable_hexa_mcp: false
 compatible_platforms: ["Claude Code"]
 invocation: "/hexa-to-memory"

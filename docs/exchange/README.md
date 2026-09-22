@@ -65,8 +65,6 @@ listing submission.
 
 ## Still outstanding before submitting
 
-- `contribution_agreement_date` is absent. It is the repository owner's to add,
-  because adding it asserts acceptance of Tenable's Contribution Agreement.
 - `compatible_clients` claims Claude Code. The full OAuth and MCP path is proven
   by the end to end test suite and a real Claude Code client completed sign-in
   through the deployed Cloudflare Access button on 2026-09-22.
