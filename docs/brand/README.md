@@ -1,68 +1,77 @@
 [Repository](../../README.md) / [Documentation](../README.md) / Brand kit
 
-# KeenDreams identity
+# KeenDreams Security identity
 
-**Every decision. Backed by evidence.**
+**Security decisions, remembered with evidence.**
 
-KeenDreams is security memory with a visible chain of evidence. The identity pairs
-an open memory loop with a K-shaped trace: several observations converge on a
-record, and the record remains open to later evidence and review.
+The identity comes from the product's central idea: a security decision should
+keep its evidence and history. Citation brackets enclose a K-shaped trace. Linked
+records, explicit trust states, and defined account boundaries carry that idea
+through the cover, product tour, and architecture diagrams.
 
-![KeenDreams wordmark](wordmark.svg)
+![KeenDreams Security Memory wordmark](wordmark.svg)
 
-## Principles
+## Design principles
 
-- **Evidence before decoration.** Show actual screens, reproducible behavior, and clear boundaries.
-- **Calm, precise, accountable.** Short statements; concrete outcomes; no unearned security promises.
-- **A recognizable system.** The same mark, typography, palette, and trace geometry across assets.
-- **Useful in both themes.** Separate light and dark artwork, with no transparent text or remote fonts.
+- **Make the product name unmistakable.** Security Memory stays prominent beside KeenDreams.
+- **Show the mechanism.** Illustrations explain evidence, review, recall, and isolation.
+- **Keep evidence readable.** Real interface details are shown at a useful size, with overview captures in the product tour.
+- **State the limits.** Demo captures are labelled. Diagrams illustrate behavior; they do not imply certification or a completed live integration.
+- **Respect the reading surface.** The cover has a consistent dark treatment. Diagrams adapt to GitHub's light and dark themes; narrow layouts get their own exports. Native text headings keep the table of contents accessible.
 
-The Chucks architecture dossier was the quality reference. KeenDreams has its own
-mark and editorial direction; it does not reuse the client's insignia or artwork.
+This kit covers the repository and documentation. Product screenshots preserve
+the application's actual interface. Source geometry, wording, and diagrams are
+original to KeenDreams Security.
 
-## Palette
+## Color roles
+
+The authoritative values are `PALETTES` in [`drawing.py`](drawing.py).
 
 | Role | Light | Dark |
 |---|---|---|
-| Canvas | `#F6F3EA` · archive paper | `#0B1815` · deep forest |
-| Primary text | `#173E2D` | `#F3F0E7` |
-| Secondary text | `#4F685A` | `#A6BEB2` |
-| Evidence trace | `#235D42` | `#BFE5CD` |
-| Decision accent | `#966018` | `#E9B86B` |
-| Hairline | `#CFD8CC` | `#30483D` |
+| Canvas | `#F4F6F0` | `#081713` |
+| Primary text | `#173A2A` | `#EDF5EE` |
+| Secondary text | `#4A6253` | `#A4BDAF` |
+| Evidence trace | `#235D42` | `#B8E7CA` |
+| Decision accent | `#845519` | `#EABB72` |
+| Hairline | `#BBCBBF` | `#315044` |
+| Panel | `#E8EEE4` | `#10251D` |
+| Emphasis surface | `#DCE6D8` | `#1A382A` |
 
-Amber marks a decision or an unconfirmed state. It is not a universal success
-color. Meaning must also be stated in text; color alone never carries trust.
+Amber identifies an unconfirmed state or decision point. Green identifies a
+trusted state. Labels state that meaning explicitly; color alone never carries
+trust. Fine hairlines are decorative. Relationship arrows use the stronger
+accent color.
 
-## Typography and accessibility
+## Typography and spacing
 
-Manrope supplies the wordmark, headings, and explanatory text. IBM Plex Mono
-supplies interface labels and code-adjacent captions. Both source subsets and
-their SIL Open Font Licenses are preserved in [`fonts/`](fonts/).
+Manrope 800 defines the display wordmark, 700 the headings, and 500 the explanatory
+text. IBM Plex Mono 400 supplies technical labels. The source font subsets and
+their SIL Open Font Licenses are preserved under [`fonts/`](fonts/).
 
-The SVG exports outline text for predictable rendering inside GitHub images.
-Every asset carries a title and description. When embedding it, add useful alt
-text and keep the important explanation in ordinary Markdown too. The images
-are static and need no animation, script, external font, or remote resource.
+Body artwork uses 16, 24, and 32 unit spacing, with a 40–48 unit cover inset.
+Text is checked against its available column before export. Small labels are
+supplementary; essential explanations also appear in normal Markdown.
 
-## Assets
+The SVGs outline their text, so they need no downloaded fonts, scripts, or
+external image references. Each export includes a title and description. The
+assets are static, and the recorded demo animation is inside an optional disclosure.
 
-| Asset | Intended use |
-|---|---|
-| [`hero-light.svg`](hero-light.svg), [`hero-dark.svg`](hero-dark.svg) | README cover, 1280 × 350 |
-| [`hero-mobile-light.svg`](hero-mobile-light.svg), [`hero-mobile-dark.svg`](hero-mobile-dark.svg) | Narrow-screen cover, 640 × 330 |
-| [`mark.svg`](mark.svg) | Square mark, 128 × 128 |
-| [`wordmark.svg`](wordmark.svg) | Horizontal identity, 700 × 148 |
-| [`trust-path-light.svg`](trust-path-light.svg), [`trust-path-dark.svg`](trust-path-dark.svg) | Evidence-to-recall explanation, 1280 × 300 |
-| [`social-preview.svg`](social-preview.svg), [`social-preview.png`](social-preview.png) | Repository social preview, 1280 × 640 |
+## Asset families
 
-The social preview PNG is ready for GitHub's repository **Settings → Social
-preview** field. Committing an image does not configure that field automatically.
+| Family | Files | Use |
+|---|---|---|
+| Cover | `hero-light.svg`, `hero-dark.svg` | 1280 × 352, fixed dark identity in both themes |
+| Compact cover | `hero-mobile-light.svg`, `hero-mobile-dark.svg` | 640 × 356, readable mobile composition |
+| Mark and wordmark | [`mark.svg`](mark.svg), [`wordmark.svg`](wordmark.svg) | Square identity and horizontal lockup |
+| Trust states | [`trust-path-light.svg`](trust-path-light.svg), [`trust-path-dark.svg`](trust-path-dark.svg) | Default proposal-to-recall flow; separate mobile exports |
+| Architecture | [`architecture-light.svg`](architecture-light.svg), [`architecture-dark.svg`](architecture-dark.svg) | Account and storage boundaries; separate mobile exports |
+| Social preview | [`social-preview.svg`](social-preview.svg), [`social-preview.png`](social-preview.png) | 1280 × 640 repository preview artwork |
 
-## Rebuild
+The social preview PNG is prepared for GitHub's repository **Settings → Social
+preview** field. Committing it does not set that field automatically.
 
-Artwork is original, deterministic vector geometry. No generated product UI or
-illustrative security finding is presented as a real screenshot.
+## Rebuild the vectors
 
 ```bash
 python3 -m venv /tmp/keendreams-brand-env
@@ -70,10 +79,21 @@ python3 -m venv /tmp/keendreams-brand-env
 /tmp/keendreams-brand-env/bin/python docs/brand/build.py
 ```
 
-[`build.py`](build.py) defines the layout, text, color tokens, mark, and diagrams.
-It reads only the included fonts and writes the SVGs beside itself. Export
-`social-preview.svg` at its native 1280 × 640 size when refreshing the PNG.
+- [`drawing.py`](drawing.py) owns typography, colors, geometry primitives, and the mark.
+- [`build.py`](build.py) composes covers, identity, and social artwork.
+- [`diagrams.py`](diagrams.py) draws the implemented trust and deployment model.
 
-Keep the mark's proportions and clear space. Do not recolor the trust states
-independently, add endorsements, or use the artwork to imply that a deployment
-or Tenable integration has been verified when it has not.
+Export `social-preview.svg` at 1280 × 640 when refreshing its PNG. Preserve the
+outlined text and the source aspect ratio.
+
+## Product captures
+
+The [product tour](../product-tour.md) uses screenshots of the running local demo
+with synthetic evidence. Detail images capture the actual review card and the
+audit/rollback section, with separate narrow-screen captures for phones. Overview
+captures preserve the surrounding interface.
+No product controls, results, or verification states are drawn into those captures.
+
+Keep the logo proportions, theme pairings, and normal-text equivalents. Do not
+add endorsements or imply verified interoperability beyond the published
+[verification record](../verification.md).
