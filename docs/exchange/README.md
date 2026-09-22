@@ -76,6 +76,9 @@ listing submission.
 
 ## Verified since the listing was first written
 
+- The repository owner reported a successful live browser sign-in through
+  Cloudflare Access on 2026-09-22. The separate Claude Code OAuth and authenticated
+  MCP check remains outstanding; see the [browser sign-in record](../verification.md#live-browser-sign-in).
 - Vectorize, Workers AI embeddings and `suggest_facts` were run against real
   infrastructure on 2026-09-17 (see the [live verification record](../verification.md#live-infrastructure)). The
   run found and fixed a bug that made every production suggestion fail.
