@@ -159,6 +159,7 @@ export function createAuthHandler(deps: AuthDeps = DEFAULT_DEPS) {
         return renderConsent({
           clientName: client.clientName ?? client.clientId,
           redirectHost: new URL(oauthRequest.redirectUri).host,
+          accessOrigin: new URL(settings.authorizationUrl).origin,
           consentId,
           csrfToken: csrf.token,
           csrfCookie: csrf.cookie,

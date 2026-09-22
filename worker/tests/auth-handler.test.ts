@@ -88,6 +88,9 @@ describe("GET /authorize", () => {
     expect(inputValue(html, "csrf")).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(response.headers.get("set-cookie")).toContain("__Host-kd_csrf=");
     expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(response.headers.get("content-security-policy")).toContain(
+      new URL(TEST_SETTINGS.authorizationUrl).origin,
+    );
     expect(response.headers.get("x-frame-options")).toBe("DENY");
   });
 

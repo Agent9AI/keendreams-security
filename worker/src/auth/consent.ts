@@ -3,6 +3,7 @@ import { escapeHtml, htmlResponse, PAGE_STYLE } from "../web/html";
 export type ConsentOptions = {
   clientName: string;
   redirectHost: string;
+  accessOrigin: string;
   consentId: string;
   csrfToken: string;
   csrfCookie: string;
@@ -42,7 +43,12 @@ export function renderConsent(options: ConsentOptions): Response {
 </main>
 </body>
 </html>`;
-  return htmlResponse(html, { headers: { "set-cookie": options.csrfCookie } });
+  return htmlResponse(html, {
+    headers: {
+      "set-cookie": options.csrfCookie,
+      "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${options.accessOrigin}; base-uri 'none'; frame-ancestors 'none'`,
+    },
+  });
 }
 
 export function messagePage(title: string, detail: string, status: number): Response {
