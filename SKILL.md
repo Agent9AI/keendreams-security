@@ -20,11 +20,15 @@ claude mcp add --transport http tenable-hexa https://cloud.tenable.com/mcp/ \
   --header "X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>"
 ```
 
-If **keendreams** (the memory server) is missing:
+If **keendreams-security** (this security-memory server) is missing:
 
 ```
-claude mcp add --transport http keendreams https://<their-worker>/mcp
+claude mcp add --transport http keendreams-security "https://<their-worker>/mcp"
 ```
+
+Replace `<their-worker>` with the hostname of their deployed KeenDreams Security
+Worker. Confirm the connection points to the security-memory deployment before
+using it.
 
 Never ask anyone to paste a key into the conversation. Keys belong in their own
 client configuration and nowhere else.

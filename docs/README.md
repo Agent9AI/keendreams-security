@@ -7,7 +7,7 @@ these pages hold the operating instructions and supporting detail.
 
 | I want to… | Start here |
 |---|---|
-| Try the product without an account | [Local demo](../README.md#try-it-locally) |
+| Try the product on my own computer | [Local demo](local-demo.md) |
 | Understand the evidence and review flow | [Reproducible walkthrough](walkthrough.md) |
 | Deploy into my Cloudflare account | [Deployment and sign-in](deployment/README.md) |
 | Connect Tenable Hexa | [Integration guide](integrations/tenable.md) |

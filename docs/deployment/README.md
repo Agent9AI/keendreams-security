@@ -59,8 +59,12 @@ npx wrangler secret put ACCESS_CLIENT_ID
 ### Connect an MCP client
 
 ```bash
-claude mcp add --transport http keendreams https://<your-worker>/mcp
+claude mcp add --transport http keendreams-security "https://<your-worker>/mcp"
 ```
+
+Replace `<your-worker>` with the hostname of your own deployed Worker before
+running that command. The connection name `keendreams-security` identifies this
+security-memory server independently of any other memory service you use.
 
 The **transport is Streamable HTTP** and the **authentication method is OAuth 2.1** with PKCE and dynamic client registration. Your MCP client opens a browser, you approve the connection, you sign in through Cloudflare Access, and the client receives a token scoped to this server. No API key is ever copied or pasted.
 
@@ -84,9 +88,13 @@ npm ci
 npm run demo
 ```
 
-Open `http://localhost:8787/review` or `http://localhost:8787/admin`. The admin page
+After the terminal reports that the local server is ready, open
+`http://localhost:8787/review` or `http://localhost:8787/admin` on that same
+computer. These are addresses for the running local demo. The admin page
 labels cloud-only checks as **live only**. Demo mode requires both `DEMO_MODE=on`
 and a loopback request host; a public deployment cannot use the demo identity.
+
+See the [local demo guide](../local-demo.md) for the complete evaluation flow.
 
 ## Verify your deployment
 

@@ -13,8 +13,12 @@ npm ci
 npm run demo
 ```
 
-Open **http://localhost:8787/review** or **http://localhost:8787/admin**.
-Demo mode uses sample data and a loopback-only identity.
+Once the terminal reports that the server is ready, open
+`http://localhost:8787/review` or `http://localhost:8787/admin` in a browser on
+that same computer. These addresses work while the local server is running.
+Demo mode uses sample data and a loopback-only identity. See the
+[local demo guide](https://github.com/Agent9AI/keendreams-security/blob/main/docs/local-demo.md)
+for the full walkthrough.
 
 ## Commands
 

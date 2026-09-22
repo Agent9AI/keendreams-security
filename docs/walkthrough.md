@@ -4,6 +4,8 @@
 
 The examples below were captured from the test suite on September 17, 2026.
 They demonstrate the ordinary MCP path, where facts begin as proposals.
+Example identifiers are shortened, and `https://your-worker` represents the
+origin of the reader's own deployment.
 Administrators may separately allowlist a specific automation identity and source;
 that is the only path that can write trusted facts without browser review.
 

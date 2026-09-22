@@ -19,26 +19,11 @@ what was remediated, which risks were accepted, and the evidence behind each
 decision. It is an open-source MCP server that runs in **your own Cloudflare
 account**, with browser review, isolated client memories, and an auditable history.
 
-[**Try the demo**](#try-it-locally) &nbsp;·&nbsp;
+[**Product tour**](#the-product-in-two-pages) &nbsp;·&nbsp;
 [Deploy](docs/deployment/README.md) &nbsp;·&nbsp;
 [Architecture](docs/architecture.md) &nbsp;·&nbsp;
 [Tool reference](docs/reference/mcp-tools.md) &nbsp;·&nbsp;
 [Documentation](docs/README.md)
-
-## Try it locally
-
-Node.js 22 or later. No account or sign-in configuration needed for the demo.
-
-```bash
-git clone https://github.com/Agent9AI/keendreams-security
-cd keendreams-security/worker
-npm ci
-npm run demo
-```
-
-Open **[the review queue](http://localhost:8787/review)** or
-**[the admin page](http://localhost:8787/admin)**. The demo seeds sample evidence
-and a local reviewer identity. Cloud-only health checks are marked **live only**.
 
 ## The product, in two pages
 
@@ -56,6 +41,10 @@ The sequence ends on the admin page, where the recorded decisions are checked
 against the hash chain. [Walk through the actual tool responses](docs/walkthrough.md).
 
 </details>
+
+For a hands-on evaluation, [run the local demo](docs/local-demo.md) with sample
+data on your own computer, or follow the [deployment guide](docs/deployment/README.md)
+to host KeenDreams Security in your Cloudflare account.
 
 ## Evidence first. Trust is a separate decision.
 
@@ -175,6 +164,11 @@ The root keeps the entry points. Supporting configuration lives beside the code
 or tests it serves. [Find your way through the documentation](docs/README.md).
 
 ## Development
+
+<a id="try-it-locally"></a>
+
+The [local demo guide](docs/local-demo.md) covers prerequisites, startup, and
+opening the review and administration pages on your own computer.
 
 ```bash
 cd worker
