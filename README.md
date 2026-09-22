@@ -186,10 +186,9 @@ Live checks on September 17, 2026 verified Workers AI, Vectorize, hybrid recall,
 and model-generated proposals. They also found a production response-format bug
 that the offline stand-ins missed; the fix is covered by regression tests.
 
-> **Still to verify:** a real MCP client completing sign-in through a live
-> Cloudflare Access application, and the Hexa recipe against a live Tenable One
-> tenant. Semantic indexing is asynchronous, and the audit log has no retention
-> policy yet. [Evidence, procedures, and all known limitations](docs/verification.md).
+> **Still to verify:** the Hexa recipe against a live Tenable One tenant.
+> Semantic indexing is asynchronous, and the audit log has no retention policy
+> yet. [Evidence, procedures, and all known limitations](docs/verification.md).
 
 For vulnerability reports, use the [private reporting process](.github/SECURITY.md).
 

@@ -5,9 +5,10 @@
 The Worker, identity configuration, memory, index, and billing belong to the
 deployer. KeenDreams does not send evidence to Agent9.
 
-> **Validation status:** the live storage and AI checks have passed. A full
-> Cloudflare Access sign-in with a real MCP client remains unverified, as does
-> a live Tenable One workflow. See [verification and limitations](../verification.md).
+> **Validation status:** the live storage and AI checks have passed, and a real
+> Claude Code OAuth connection through the Cloudflare Access button has been
+> completed. A live Tenable One workflow remains unverified. See [verification
+> and limitations](../verification.md).
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Agent9AI/keendreams-security/tree/main/worker)
 

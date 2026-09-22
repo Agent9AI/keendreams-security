@@ -58,21 +58,19 @@ namespace, then deletes them.
 
 ## Live browser sign-in
 
-On 2026-09-22, the repository owner reported a successful browser sign-in to the
-deployed review route through Cloudflare Access for SaaS (OIDC). Before that
-manual check, the deployed review and administration routes were verified to
-redirect to the intended Access application with the Worker's callback URL.
-
-This records the browser login separately from MCP-client verification. A real
-Claude Code client completing OAuth and an authenticated MCP call remains to be
-verified.
+On 2026-09-22, the repository owner completed a successful Claude Code OAuth
+connection to the deployed MCP endpoint. The flow opened Cloudflare Access for
+SaaS (OIDC), the Cloudflare sign-in button completed authentication, and Claude
+Code reported that the server was connected and its tools were available. The
+deployed review and administration routes were also verified against the same
+Access application and callback URL.
 
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
-- **A real Claude Code client has not yet completed OAuth and an authenticated MCP call against the live deployment.** Browser sign-in was reported successful on 2026-09-22. The additional MCP-client authorization and token flow is covered by the offline suite but still needs its live check.
+- **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
 - **The Tenable Hexa recipe has not been run against a live Tenable One tenant.** Its safety design, an explicit allowlist of read tools, is documented and reviewable, but the recipe itself is unverified in production.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.

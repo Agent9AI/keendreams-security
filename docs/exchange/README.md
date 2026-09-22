@@ -68,17 +68,15 @@ listing submission.
 - `contribution_agreement_date` is absent. It is the repository owner's to add,
   because adding it asserts acceptance of Tenable's Contribution Agreement.
 - `compatible_clients` claims Claude Code. The full OAuth and MCP path is proven
-  by the end to end test suite and the deployed endpoints answer correctly, but a
-  real Claude Code client has not yet completed a sign-in against a deployment
-  with Cloudflare Access configured.
+  by the end to end test suite and a real Claude Code client completed sign-in
+  through the deployed Cloudflare Access button on 2026-09-22.
 - The pull request title must read `Add listing: KeenDreams Security Memory`, and
   the description must carry the Contribution Agreement acceptance statement.
 
 ## Verified since the listing was first written
 
-- The repository owner reported a successful live browser sign-in through
-  Cloudflare Access on 2026-09-22. The separate Claude Code OAuth and authenticated
-  MCP check remains outstanding; see the [browser sign-in record](../verification.md#live-browser-sign-in).
+- A real Claude Code OAuth connection completed through the deployed Cloudflare
+  Access button on 2026-09-22; see the [live sign-in record](../verification.md#live-browser-sign-in).
 - Vectorize, Workers AI embeddings and `suggest_facts` were run against real
   infrastructure on 2026-09-17 (see the [live verification record](../verification.md#live-infrastructure)). The
   run found and fixed a bug that made every production suggestion fail.
