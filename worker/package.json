@@ -70,12 +70,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@cloudflare/vitest-plugin": "1.1.13",
-    "@types/node": "22.20.3",
+    "@cloudflare/vitest-plugin": "1.2.1",
+    "@types/node": "22.20.4",
     "typescript": "7.0.2",
     "vite": "7.3.6",
     "vitest": "4.1.11",
-    "wrangler": "4.135.0"
+    "wrangler": "4.136.1"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "0.10.3",
