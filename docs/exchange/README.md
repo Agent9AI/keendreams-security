@@ -1,16 +1,16 @@
 # CyberAgents Exchange submission
 
-This directory holds the listing that gets copied into a fork of
-[`tenable/cyberagents-exchange`](https://github.com/tenable/cyberagents-exchange)
-when the submission is made. The path here mirrors the path there, so the file
-moves across unchanged.
+The KeenDreams Security Memory MCP-server listing was published on the
+[CyberAgents Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/)
+on September 17, 2026. This directory retains the source listing and the
+companion skill listing that has not yet been submitted.
 
-Two listings are prepared, one per pull request as Tenable prefers:
+Current status as of October 8, 2026:
 
-| File | Type | Submit |
+| File | Type | Status |
 |---|---|---|
-| `mcp-servers/keendreams-security-memory.md` | MCP server | First |
-| `skills/hexa-to-memory.md` | Skill | After the first merges |
+| `mcp-servers/keendreams-security-memory.md` | MCP server | Published as Contributed |
+| `skills/hexa-to-memory.md` | Skill | Prepared; not yet published |
 
 Both validate cleanly against Tenable's `validator.py`, re-downloaded and re-run
 on 2026-09-17.
@@ -35,7 +35,8 @@ values. All four were rejected with the expected message.
 
 ## Two claims deliberately left switched off
 
-**`works_with_tenable_hexa_mcp` is `false` and there is no `cta`.**
+**The published MCP listing keeps `works_with_tenable_hexa_mcp` false and has no
+Hexa call to action.**
 
 Setting `cta: "T1"` is what renders the "Powered by Hexa AI" treatment and a
 "Request a Demo" link on the listing, and the validator will only accept it when
@@ -63,13 +64,16 @@ same pull request would fail validation today. Adding a vocabulary value is a
 separate change to Tenable's own repository and should not be bundled with a
 listing submission.
 
-## Still outstanding before submitting
+## Still outstanding
 
-- `compatible_clients` claims Claude Code. The full OAuth and MCP path is proven
-  by the end to end test suite and a real Claude Code client completed sign-in
-  through the deployed Cloudflare Access button on 2026-09-22.
-- The pull request title must read `Add listing: KeenDreams Security Memory`, and
-  the description must carry the Contribution Agreement acceptance statement.
+- Run the documented `/hexa-to-memory` workflow against the Tenable One trial,
+  using one asset or one CVE and only the four allowlisted read tools.
+- Preserve the tool responses and memory review result as interoperability
+  evidence without recording credentials.
+- After that test passes, update the published MCP listing's Hexa fields as one
+  change and submit `skills/hexa-to-memory.md` as its own pull request.
+- Keep the current listing unchanged if any part of the live workflow remains
+  unverified.
 
 ## Verified since the listing was first written
 

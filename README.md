@@ -173,7 +173,7 @@ MCP client. [Follow the sign-in instructions](docs/deployment/README.md#sign-in-
 The included [`/hexa-to-memory` skill](SKILL.md) uses an explicit allowlist of
 Hexa read tools to compare findings with prior decisions and record proposals.
 [Integration guide](docs/integrations/tenable.md) ·
-[Exchange submission status](docs/exchange/README.md).
+[Exchange listing status](docs/exchange/README.md).
 
 <a id="security-posture-and-verification"></a>
 

@@ -12,13 +12,37 @@ already decided, and leaves an audit trail a human confirms.
 
 Both MCP servers must be connected in this session.
 
-Check with `/mcp`. If **tenable-hexa** is missing, tell the person to add it with
-their own Tenable One keys, and stop until they have:
+Check with `/mcp`. If **tenable-hexa** is missing, verify these Tenable-side
+prerequisites before doing anything else:
 
+- Tenable One Foundation or Advanced is active.
+- Hexa AI MCP is enabled for the account.
+- The API-key owner has a read-capable role and access to the intended assets.
+- Vulnerability Management API keys exist under Settings > My Account > API Keys.
+
+Never put keys in chat, shell history, a repository, or a command argument. Ask
+the person to load `TENABLE_ACCESS_KEY` and `TENABLE_SECRET_KEY` into their local
+environment from their credential manager. Then configure Claude Code with
+environment-variable references, not literal values. A project `.mcp.json` entry
+can be shared safely in this form:
+
+```json
+{
+  "mcpServers": {
+    "tenable-hexa": {
+      "type": "http",
+      "url": "https://cloud.tenable.com/mcp/",
+      "headers": {
+        "X-ApiKeys": "accessKey=${TENABLE_ACCESS_KEY};secretKey=${TENABLE_SECRET_KEY}"
+      }
+    }
+  }
+}
 ```
-claude mcp add --transport http tenable-hexa https://cloud.tenable.com/mcp/ \
-  --header "X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>"
-```
+
+Claude Code expands environment variables in HTTP MCP headers. If either
+variable is missing, configuration must fail closed. Re-run `/mcp` and stop if
+the server is not connected or returns an authentication error.
 
 If **keendreams-security** (this security-memory server) is missing:
 
@@ -29,9 +53,6 @@ claude mcp add --transport http keendreams-security "https://<their-worker>/mcp"
 Replace `<their-worker>` with the hostname of their deployed KeenDreams Security
 Worker. Confirm the connection points to the security-memory deployment before
 using it.
-
-Never ask anyone to paste a key into the conversation. Keys belong in their own
-client configuration and nowhere else.
 
 ## Safety rules, in order of importance
 

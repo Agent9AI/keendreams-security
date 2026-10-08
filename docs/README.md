@@ -16,7 +16,7 @@ these pages hold the operating instructions and supporting detail.
 | Understand isolation, storage, and retrieval | [Architecture](architecture.md) |
 | Assess the security boundaries and data flows | [Security model](security.md) |
 | See what has actually been verified | [Verification and limitations](verification.md) |
-| Review the planned Exchange submission | [Submission status](exchange/README.md) |
+| Review the Exchange listing and Hexa claim | [Listing status](exchange/README.md) |
 | Contribute a change | [Contribution guide](../.github/CONTRIBUTING.md) |
 | Report a vulnerability privately | [Security policy](../.github/SECURITY.md) |
 | Use or extend the visual identity | [Brand kit](brand/README.md) |
