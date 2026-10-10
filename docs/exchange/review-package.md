@@ -40,8 +40,8 @@ here, and a live Origin integration is not established by this package.
 | `record_episode` | Stores redacted evidence, provenance, search work, and audit state; consumes write quota | [Episodes](../../worker/src/memory/episodes.ts), [episode tests](../../worker/tests/episodes.test.ts) |
 | `assert_fact` | Creates a proposal by default; an explicitly allowlisted identity/source may create trusted facts and supersede a prior version | [Trust policy](../../worker/src/policy/trust.ts), [fact tests](../../worker/tests/facts.test.ts) |
 | `suggest_facts` | Calls the configured model and writes validated proposals; never grants trust | [Suggestion path](../../worker/src/search/suggest.ts), [tests](../../worker/tests/suggest.test.ts) |
-| Browser review | Signed-in reviewer/admin confirms, rejects, or rolls back; CSRF and role checks apply | [Review routes](../../worker/src/web/review.ts), [route tests](../../worker/tests/review.routes.test.ts) |
-| Browser administration | Administrator manages client access, write limits, and automation allowlists | [Admin routes](../../worker/src/web/admin.ts), [tests](../../worker/tests/admin.test.ts) |
+| Browser review | Signed-in reviewer/admin confirms or rejects; CSRF and role checks apply | [Review routes](../../worker/src/web/review.ts), [route tests](../../worker/tests/review.routes.test.ts) |
+| Browser administration | Administrator manages client access, write limits, automation allowlists, audit rollback and failed-index retries | [Admin routes](../../worker/src/web/admin.ts), [tests](../../worker/tests/admin.test.ts) |
 | Tenable skill | Named, discovered read tools in an agreed scope; no scans, tickets, tagging, or Tenable writes | [Skill](../../SKILL.md), [integration guide](../integrations/tenable.md) |
 
 Read-only Tenable access is sufficient for the intended workflow. It does not
