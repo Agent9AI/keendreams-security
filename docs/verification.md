@@ -14,6 +14,7 @@ not a certification or proof that every deployment works.
 | First browser review without vendor accounts | Running local app with synthetic fixtures | One click changed pending/confirmed counts from 3/1 to 2/2; audit entries increased from 8 to 9 and remained intact. [Screenshots](start-here.md#1-see-the-review-workflow-without-any-accounts) · [Recorded result](evidence/local-first-decision-2026-10-10.json). |
 | Storage, embeddings, semantic retrieval, and suggestions | Live Cloudflare services | Passed on 2026-09-17. [Procedure and observations](#live-infrastructure). |
 | Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
+| Claude Code memory tool execution | Live authenticated `find_facts` call | Passed on 2026-10-10 for one selected asset; zero current facts returned, no writes. [Sanitized record](evidence/memory-client-read-2026-10-10.json). |
 | Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
 | Complete Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Pending; not established by the local demo or tool discovery. |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
@@ -93,6 +94,12 @@ completed initialization and tool discovery. It reported `Tenable VM MCP`
 version `4.0.10`, protocol `2025-03-26`, and 95 tools without a further results page.
 An actual Claude Code session also reported both Tenable and KeenDreams Security
 connected; that session did not execute the agent-driven workflow.
+
+A separate Claude Code check at 21:10 UTC successfully executed `find_facts`
+against the deployed memory for the selected asset. It returned zero current
+facts without a tool error. This confirms actual authenticated memory tool use;
+it made no Tenable calls or memory writes and does not complete the cross-system
+workflow. [Read-check record](evidence/memory-client-read-2026-10-10.json).
 
 | Check | Result |
 |---|---|
