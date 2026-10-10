@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Paid deployment and integration assistance
+    url: https://agent9.dev/contact/?utm_source=github&utm_medium=issue-template&utm_campaign=keendreams-security
+    about: Discuss optional deployment, identity setup, and application or agent integration help. Do not include credentials.
   - name: Report a security vulnerability privately
     url: https://github.com/Agent9AI/keendreams-security/security/advisories/new
     about: Please keep vulnerabilities and credentials out of public issues.

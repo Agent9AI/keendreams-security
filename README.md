@@ -16,23 +16,32 @@
 
 **Give your security applications and agents a memory they can explain.**
 
-KeenDreams Security is an **open-source security memory layer** for findings,
-evidence, and reviewed decisions. Semantic vector search and keyword search help
-retrieve what your team already knows; trust and validity checks determine which
-facts are eligible for default recall. Each fact stays connected to its evidence
-and history. Deploy it in **your own Cloudflare account** and connect through MCP.
+KeenDreams Security is an **open-source security memory layer** for applications
+and agents. Record evidence, review proposed facts, and retrieve your team's
+decisions through semantic vector and keyword search. Default recall includes
+only trusted, currently valid facts, with their evidence and history. Deploy it
+in **your own Cloudflare account** and connect through MCP.
 
 **No Tenable account or Tenable One license is required to use KeenDreams Security.**
-The optional Tenable Hexa workflow brings live exposure data into that memory,
-so current findings can be investigated alongside previous decisions.
-Cloudflare hosting and any chosen AI services have their own requirements and costs.
+The optional Tenable Hexa workflow connects exposure data with that memory.
+[See the live results and what remains to verify](docs/verification.md#live-tenable-hexa-check).
 
-[**Product tour**](#the-product-in-two-pages) &nbsp;·&nbsp;
+[**Start here**](docs/start-here.md) &nbsp;·&nbsp;
+[Product tour](#the-product-in-two-pages) &nbsp;·&nbsp;
 [Deploy](docs/deployment/README.md) &nbsp;·&nbsp;
 [Architecture](docs/architecture.md) &nbsp;·&nbsp;
 [Tool reference](docs/reference/mcp-tools.md) &nbsp;·&nbsp;
 [Tenable Hexa](docs/integrations/tenable.md) &nbsp;·&nbsp;
 [Documentation](docs/README.md)
+
+| Your first step | What you get |
+|---|---|
+| [Try it without accounts](docs/local-demo.md) | Inspect sample evidence, review one proposal, and verify the audit chain locally. |
+| [Connect your application or agent](docs/deployment/README.md) | Deploy your own memory server and connect through OAuth-protected MCP. |
+| [Evaluate Tenable Hexa](docs/integrations/tenable.md) | Read scoped exposure data and test it against your team's recorded decisions. |
+
+[Listed on CyberAgents Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/) ·
+[What is verified](docs/verification.md) · [Get help](.github/SUPPORT.md)
 
 <a id="the-product-in-two-pages"></a>
 
@@ -189,6 +198,7 @@ Nine MCP tools. **Six reads, three writes.** All four behavior hints are explici
 The [deployment guide](docs/deployment/README.md) covers prerequisites, bindings,
 settings, and connecting an MCP client. The deployer owns the infrastructure;
 there is no service operated by Agent9 that receives your evidence.
+Cloudflare hosting and selected AI services have their own requirements and costs.
 
 ### Sign-in setup
 
