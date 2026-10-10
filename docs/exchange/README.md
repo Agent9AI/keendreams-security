@@ -5,6 +5,9 @@ This directory holds the listing sources used in a fork of
 for Exchange submissions. The path here mirrors the path there, so each file
 moves across unchanged.
 
+The [maintainer review package](review-package.md) maps the pinned release to
+its data flows, permissions, source code, tests, and remaining verification gaps.
+
 The MCP-server listing was merged on 2026-09-28 in
 [Tenable PR #189](https://github.com/tenable/cyberagents-exchange/pull/189) and is
 [published on the Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/).
@@ -15,8 +18,9 @@ The companion skill remains prepared separately:
 | `mcp-servers/keendreams-security-memory.md` | MCP server | Published |
 | `skills/hexa-to-memory.md` | Skill | Prepared; full live Hexa workflow pending |
 
-Both validate cleanly against Tenable's `validator.py`, re-downloaded and re-run
-on 2026-09-17.
+Both validate against Tenable's `validator.py` at Exchange commit
+`de2b758e89af4763b7028a5de70322013c6ba30b`, checked on 2026-10-10.
+This is metadata validation, not an interoperability or security certification.
 
 ## How the listing was checked
 
@@ -59,9 +63,9 @@ works_with_tenable_hexa_mcp: true
 cta: "T1"
 ```
 
-The validator enforces that these three move as a set, which is a good design:
-the demo call to action cannot appear without the interoperability claim behind
-it.
+The validator requires the Hexa integration value when the flag is true, and
+requires the flag when the optional `cta` is present. It does not require adding
+a call to action merely because interoperability has been verified.
 
 **`Cloudflare` is not listed under `integrations`.** It is not in the validator's
 vocabulary, so the design document's assumption that it could be added in the

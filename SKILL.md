@@ -111,6 +111,12 @@ Ask for one focused scope before querying anything. A whole estate is not a
 scope. Good scopes: a named asset, a tag, a single CVE, a severity within a time
 window.
 
+Agree the destination memory client as well. Read permission in Tenable does not
+by itself authorize copying a shared lab's data elsewhere. Confirm the scoped
+evidence may be stored in that client's memory. Record the asset identifier used
+by Tenable and use the team's existing canonical key; do not invent a hostname
+or merge records solely because display names match.
+
 ### 2. Pull the findings
 
 Use the allowlisted read tools for exactly that scope. Keep the raw response.
@@ -139,6 +145,28 @@ Look for `ACCEPTED_RISK`, `FALSE_POSITIVE` and `REMEDIATED`. Note who confirmed
 each one, when, and any expiry. Use `recall` instead when the question is
 open-ended, for example "has anything like this come up on the payments hosts".
 
+Leave `status` at its default (`current`) for decisions: `trusted` alone does not
+filter expired facts. Also query the exact pair with `status: "proposed"` to
+identify pending work before proposing it again. If a result reaches its limit,
+report incomplete coverage rather than concluding no other decisions exist.
+
+Classify each pair by the returned evidence:
+
+- **New:** no current fact or matching pending proposal was found within the
+  checked scope and limits.
+- **Pending review:** a matching proposal exists; it is not a decision.
+- **Known finding:** a confirmed `HAS_VULN` exists. This confirms an observation,
+  not remediation, acceptance, or a false positive.
+- **Prior triage decision:** a current human-confirmed disposition exists. Show
+  its predicate, reviewer, time, reason, and expiry, preserving its actual scope.
+- **Needs reassessment:** fresh findings conflict with a prior remediation, the
+  decision expired, or evidence is insufficient to apply the old decision.
+
+Never automatically suppress a fresh finding because an earlier decision exists.
+Do not describe two incompatible dispositions as settled. Present the conflict
+and evidence to a reviewer. An allowlisted-source fact must be attributed to that
+automation, not described as human-confirmed.
+
 ### 4. Record the evidence
 
 Write one episode per batch, not one per finding:
@@ -156,7 +184,8 @@ is a secondary safeguard; it does not authorize sending credentials to memory.
 
 ### 5. Propose the facts
 
-For each finding still live, cite the episode:
+For each evidenced finding needing a new proposal, cite the episode. Reuse an
+existing matching pending proposal instead of repeatedly asserting it:
 
 ```
 assert_fact(
@@ -169,6 +198,10 @@ assert_fact(
 
 These land as `UNCONFIRMED` unless an administrator has allowlisted this identity
 and the `tenable-hexa` source for the client.
+
+Check the returned status. If this evaluation expects human review but the write
+is already trusted, stop and report the allowlist configuration; do not claim
+the human-review gate was demonstrated. Do not alter allowlists to finish a demo.
 
 If the person makes a triage decision during the conversation, record it the same
 way, with their reasoning in `reason`. `ACCEPTED_RISK` requires both a `reason`
@@ -183,19 +216,28 @@ Produce one table, in this order:
 | Asset | Canonical key |
 | Finding | CVE or plugin |
 | Severity | From Hexa |
-| Status | New, Known, or Already triaged |
+| Status | New, Pending review, Known finding, Prior triage decision, or Needs reassessment |
 | Decided by | Who confirmed it and when, for triaged rows |
 | Expires | For accepted risks |
 
 Then state three things plainly:
 
 - how many findings were new
-- how many were already triaged, so nobody needs to look at them again
+- how many had applicable prior decisions, and which need reassessment
 - how many proposals are now waiting for review, with the review link returned by
   `assert_fact`
 
 End by giving the person the `/review` URL for any pending proposals. Confirming
 those proposals is their job.
+
+For a verification run, query `recall` before review both with its default and
+with `include_proposed: true`; compare the specific proposal ID rather than
+assuming all result counts are zero. Stop for the person to review in the browser.
+After they confirm, repeat default recall and inspect `fact_history`. Check the
+same fact ID, evidence episode, reviewer, confirmation time, and audit event.
+Record the returned `search_mode`; keyword success does not prove semantic
+retrieval. A repeated Tenable read can demonstrate recognition of the confirmed
+finding without pretending a risk disposition was made.
 
 ## When something is not right
 

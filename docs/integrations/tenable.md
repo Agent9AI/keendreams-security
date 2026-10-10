@@ -75,6 +75,10 @@ vendor, product, and version, as described in
 
 This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists three Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves new facts as proposals for review. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
 
+Follow the [skill installation and evaluation guide](hexa-skill.md) to load it
+in Claude Code. A confirmed finding and a triage disposition are different:
+`HAS_VULN` alone does not mean the risk was accepted or the vulnerability fixed.
+
 The workflow runs through an MCP client connected to both servers. It is not a
 background synchronization service. Asset-level counts alone cannot support a
 specific vulnerability assertion; the workflow requires evidence linking the
@@ -93,8 +97,9 @@ Use one named asset or one CVE. Do not start with the whole tenant.
    reject at least one proposal.
 4. Run the same recall again. Only the human-confirmed decision should appear,
    with reviewer, time, and evidence.
-5. Repeat the same Tenable query. The report must distinguish already-triaged
-   findings from new work without issuing any Tenable write action.
+5. Repeat the same Tenable query. Distinguish known observations, pending
+   proposals, applicable prior decisions and conflicts without issuing any
+   Tenable write action. A confirmed observation is not a triage disposition.
 
 | Acceptance check | Pass condition |
 |---|---|

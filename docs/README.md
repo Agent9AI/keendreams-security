@@ -19,6 +19,7 @@ these pages hold the operating instructions and supporting detail.
 | Assess the security boundaries and data flows | [Security model](security.md) |
 | See what has actually been verified | [Verification and limitations](verification.md) |
 | Review the Exchange listing and Hexa claim | [Listing status](exchange/README.md) |
+| Inspect the release, authority boundaries, and review evidence | [Maintainer review package](exchange/review-package.md) |
 | Inspect the initial release scope | [v0.1.0 release notes](releases/v0.1.0.md) |
 | Contribute a change | [Contribution guide](../.github/CONTRIBUTING.md) |
 | Report a vulnerability privately | [Security policy](../.github/SECURITY.md) |
