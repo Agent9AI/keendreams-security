@@ -276,6 +276,12 @@ Run these commands from `worker/`. `npm run types` regenerates bindings under `w
 
 **Built by [Agent9](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security). Owned by you.**
 
-MIT licensed. The complete implementation is here. For deployment, identity setup,
-and integration with your team's scanners and workflows,
-[work with Agent9](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security).
+### Bring security memory into your workflow
+
+KeenDreams Security is MIT licensed. You can deploy and use the complete
+open-source project without purchasing services from Agent9.
+
+For paid help with deployment, identity setup, or integration into your security
+application or agent, **[talk to Agent9](https://agent9.dev/contact/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security)**.
+Tell us what you want to connect and which workflow you want to improve.
+Project scope, ongoing support, and response commitments are agreed separately.
