@@ -70,7 +70,8 @@ Partner integrations should also send Tenable's documented User-Agent format:
 version. Keep credentials and private deployment addresses out of committed files.
 
 Discover the live Hexa tools before querying findings. On 2026-10-10, the checked
-server exposed 95 tools, including the three below; `asset_search` was absent.
+server exposed 95 tools; `asset_search` was absent. The two asset-scoped
+vulnerability tools below were also invoked successfully in a bounded live check.
 Tool availability and arguments can change. An unavailable tool is a coverage
 gap, not a reason to guess a replacement or broaden the query.
 
@@ -82,6 +83,14 @@ same server. Call only tools from this allowlist:
 - `tenable_one_search_assets`
 - `workbenches_list_vulnerabilities`
 - `workbenches_list_assets_with_vulnerabilities`
+- `workbenches_get_asset_vulnerabilities`
+- `workbenches_get_asset_vulnerability_details`
+
+Use the last two only for the agreed asset UUID, and the details tool only for a
+plugin explicitly associated with that asset by the source response. They do not
+provide a general permission to query other assets. On the checked server their
+schemas accepted `asset_id`, optional `age`, and (for details) required integer
+`plugin_id`. Discover and follow the actual schemas before calling them.
 
 If you need something these cannot answer, run `tools/list` against Hexa, show
 the person the specific tool you propose to call, say what it does, and wait for
@@ -111,6 +120,12 @@ Ask for one focused scope before querying anything. A whole estate is not a
 scope. Good scopes: a named asset, a tag, a single CVE, a severity within a time
 window.
 
+Agree the destination memory client as well. Read permission in Tenable does not
+by itself authorize copying a shared lab's data elsewhere. Confirm the scoped
+evidence may be stored in that client's memory. Record the asset identifier used
+by Tenable and use the team's existing canonical key; do not invent a hostname
+or merge records solely because display names match.
+
 ### 2. Pull the findings
 
 Use the allowlisted read tools for exactly that scope. Keep the raw response.
@@ -123,8 +138,8 @@ timestamp unless its documented semantics establish that meaning.
 
 An asset summary containing vulnerability counts does not establish a specific
 asset-to-CVE or asset-to-plugin relationship. If the response lacks that mapping,
-stop before asserting `HAS_VULN`. Request approval for a scoped read tool that
-returns the missing evidence, following the allowlist rule above. Never pair an
+stop before asserting `HAS_VULN`. Use the allowed asset-scoped reads to retrieve
+the mapping; request agreement before using any other tool. Never pair an
 asset summary with an unrelated tenant-wide vulnerability list.
 
 ### 3. Ask memory what is already known
@@ -135,9 +150,40 @@ For each asset and vulnerability pair, call `find_facts` on the memory server:
 find_facts(subject: "asset:<host>", object: "cve:<CVE-ID>")
 ```
 
+When the source establishes a plugin relationship without a CVE mapping, use
+`tenable-plugin:<numeric-plugin-id>` as the object. A plugin can cover several
+CVEs; never manufacture one or infer every CVE from the plugin name.
+
 Look for `ACCEPTED_RISK`, `FALSE_POSITIVE` and `REMEDIATED`. Note who confirmed
 each one, when, and any expiry. Use `recall` instead when the question is
 open-ended, for example "has anything like this come up on the payments hosts".
+
+Leave `status` at its default (`current`) for decisions: `trusted` alone does not
+filter expired facts. Also query the exact pair with `status: "proposed"` to
+identify pending work before proposing it again. If a result reaches its limit,
+report incomplete coverage rather than concluding no other decisions exist.
+
+For a focused pair-level report, those two exact lookups are sufficient. Do not
+add `get_entity` or `explore_graph` calls unless the person requested wider entity
+or relationship context. A tool denied by the session's permissions is a boundary:
+report the limitation and do not retry that tool with different arguments.
+
+Classify each pair by the returned evidence:
+
+- **New:** no current fact or matching pending proposal was found within the
+  checked scope and limits.
+- **Pending review:** a matching proposal exists; it is not a decision.
+- **Known finding:** a confirmed `HAS_VULN` exists. This confirms an observation,
+  not remediation, acceptance, or a false positive.
+- **Prior triage decision:** a current human-confirmed disposition exists. Show
+  its predicate, reviewer, time, reason, and expiry, preserving its actual scope.
+- **Needs reassessment:** fresh findings conflict with a prior remediation, the
+  decision expired, or evidence is insufficient to apply the old decision.
+
+Never automatically suppress a fresh finding because an earlier decision exists.
+Do not describe two incompatible dispositions as settled. Present the conflict
+and evidence to a reviewer. An allowlisted-source fact must be attributed to that
+automation, not described as human-confirmed.
 
 ### 4. Record the evidence
 
@@ -156,7 +202,8 @@ is a secondary safeguard; it does not authorize sending credentials to memory.
 
 ### 5. Propose the facts
 
-For each finding still live, cite the episode:
+For each evidenced finding needing a new proposal, cite the episode. Reuse an
+existing matching pending proposal instead of repeatedly asserting it:
 
 ```
 assert_fact(
@@ -169,6 +216,10 @@ assert_fact(
 
 These land as `UNCONFIRMED` unless an administrator has allowlisted this identity
 and the `tenable-hexa` source for the client.
+
+Check the returned status. If this evaluation expects human review but the write
+is already trusted, stop and report the allowlist configuration; do not claim
+the human-review gate was demonstrated. Do not alter allowlists to finish a demo.
 
 If the person makes a triage decision during the conversation, record it the same
 way, with their reasoning in `reason`. `ACCEPTED_RISK` requires both a `reason`
@@ -183,19 +234,28 @@ Produce one table, in this order:
 | Asset | Canonical key |
 | Finding | CVE or plugin |
 | Severity | From Hexa |
-| Status | New, Known, or Already triaged |
+| Status | New, Pending review, Known finding, Prior triage decision, or Needs reassessment |
 | Decided by | Who confirmed it and when, for triaged rows |
 | Expires | For accepted risks |
 
 Then state three things plainly:
 
 - how many findings were new
-- how many were already triaged, so nobody needs to look at them again
+- how many had applicable prior decisions, and which need reassessment
 - how many proposals are now waiting for review, with the review link returned by
   `assert_fact`
 
 End by giving the person the `/review` URL for any pending proposals. Confirming
 those proposals is their job.
+
+For a verification run, query `recall` before review both with its default and
+with `include_proposed: true`; compare the specific proposal ID rather than
+assuming all result counts are zero. Stop for the person to review in the browser.
+After they confirm, repeat default recall and inspect `fact_history`. Check the
+same fact ID, evidence episode, reviewer, confirmation time, and audit event.
+Record the returned `search_mode`; keyword success does not prove semantic
+retrieval. A repeated Tenable read can demonstrate recognition of the confirmed
+finding without pretending a risk disposition was made.
 
 ## When something is not right
 

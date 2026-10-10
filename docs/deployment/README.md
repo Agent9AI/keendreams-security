@@ -7,7 +7,8 @@ deployer. KeenDreams does not send evidence to Agent9.
 
 > **Validation status:** the live storage and AI checks have passed, and a real
 > Claude Code OAuth connection through the Cloudflare Access button has been
-> completed. A live Tenable One workflow remains unverified. See [verification
+> completed. One live Hexa finding completed evidence recording, human review
+> and later recall. See [verification
 > and limitations](../verification.md).
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Agent9AI/keendreams-security/tree/main/worker)

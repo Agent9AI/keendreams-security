@@ -33,6 +33,12 @@ No component sends data to the authors of this project.
 | Your Worker | Your Vectorize index | Embeddings and item IDs. No episode text, no metadata. |
 | Your Worker | Your Cloudflare Access | OAuth code exchange and key discovery |
 | Analyst's Claude Code | Tenable Hexa AI MCP | Read-only finding queries, using the analyst's own Tenable keys |
+| Analyst's AI client | Its configured model provider | Conversation and selected tool results under that client's settings; these may contain sensitive findings |
+
+The last flow belongs to the connecting client, not to the memory Worker's
+backend. Review the client's model-provider and logging settings before using
+private evidence. Read access to a shared tenant does not itself authorize
+copying its findings into a different memory or publishing them.
 
 ## What the trust boundary does not promise
 

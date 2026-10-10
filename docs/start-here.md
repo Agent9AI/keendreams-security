@@ -87,8 +87,8 @@ authorized Tenable data; its own licensing, enablement, and API permissions appl
 Use the [secure Hexa setup](integrations/tenable.md#connect-without-exposing-keys),
 then evaluate one scoped finding with the documented acceptance checks.
 
-Live authentication, tool discovery, and one bounded read have passed. The full
-finding-to-memory workflow remains pending. Check the
+One live asset/plugin finding completed evidence recording, human browser
+review, and later recall with the original evidence. Check the
 [verification record](verification.md#live-tenable-hexa-check) before interpreting
 any example as verified interoperability.
 

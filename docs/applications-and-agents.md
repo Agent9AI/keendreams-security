@@ -98,9 +98,10 @@ agent-focused demonstration should show the same evidence and trust boundaries.
 
 ## Verified today and still to prove
 
-Live Hexa authentication, discovery, and one bounded asset-summary query passed
-on 2026-10-10. Both servers also connected in Claude Code. Specific-finding
-capture, human review, and recall in a later session remain pending; the Exchange
-Hexa compatibility flag stays false until the complete workflow is demonstrated.
+On 2026-10-10, one real Hexa asset/plugin finding completed evidence capture,
+proposal exclusion, human browser review, and default recall in a later Claude
+Code session with the same evidence and reviewer. The subsequent source read
+recognized the known finding. This establishes the bounded observation workflow;
+it does not demonstrate risk acceptance, remediation, or an Origin integration.
 [Verification record](verification.md#live-tenable-hexa-check) ·
-[Sanitized test evidence](evidence/hexa-2026-10-10.json).
+[Sanitized test evidence](evidence/hexa-workflow-2026-10-10.json).

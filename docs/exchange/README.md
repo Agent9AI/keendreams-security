@@ -12,11 +12,12 @@ The companion skill remains prepared separately:
 
 | File | Type | Status |
 |---|---|---|
-| `mcp-servers/keendreams-security-memory.md` | MCP server | Published |
-| `skills/hexa-to-memory.md` | Skill | Prepared; full live Hexa workflow pending |
+| `mcp-servers/keendreams-security-memory.md` | MCP server | Published; Hexa verification update prepared for upstream review |
+| `skills/hexa-to-memory.md` | Skill | Prepared separately with bounded live and synthetic evidence |
 
-Both validate cleanly against Tenable's `validator.py`, re-downloaded and re-run
-on 2026-09-17.
+Both validate against Tenable's `validator.py` at Exchange commit
+`de2b758e89af4763b7028a5de70322013c6ba30b`, checked on 2026-10-10.
+This is metadata validation, not an interoperability or security certification.
 
 ## How the listing was checked
 
@@ -36,32 +37,26 @@ meaningful rather than vacuous: `Cloudflare` in `integrations`, `cta` without th
 Hexa flag, the Hexa flag without the Hexa integration, and three `domains`
 values. All four were rejected with the expected message.
 
-## Two claims deliberately left switched off
+## Hexa interoperability and review status
 
-**The published MCP listing keeps `works_with_tenable_hexa_mcp` false and has no
-Hexa call to action.**
-
-Setting `cta: "T1"` is what renders the "Powered by Hexa AI" treatment and a
-"Request a Demo" link on the listing, and the validator will only accept it when
-`works_with_tenable_hexa_mcp` is `true`. That flag is a claim of verified
-interoperability, and the project's own design document requires it to be proven
-against a live Tenable One instance before it is set.
-
-Live authentication, tool discovery, and one bounded Hexa read passed on
-2026-10-10. The complete finding-to-memory, review, and recall test is still
-pending; see the [verification record](../verification.md#live-tenable-hexa-check).
-Once the Hexa recipe has been exercised end to end against a real tenant,
-three lines change together:
+The listing sources now set the interoperability flag based on the October 10
+live finding-to-evidence, proposal, human-review and recall check. The
+[verification record](../verification.md#live-tenable-hexa-check) defines its scope. The published
+Exchange listing changes only after Tenable merges the corresponding update.
 
 ```yaml
 integrations: ["Tenable", "Tenable Hexa AI MCP"]
 works_with_tenable_hexa_mcp: true
-cta: "T1"
 ```
 
-The validator enforces that these three move as a set, which is a good design:
-the demo call to action cannot appear without the interoperability claim behind
-it.
+The validator requires the Hexa integration value when the flag is true, and
+requires the flag when the optional `cta` is present. It does not require adding
+a call to action merely because interoperability has been verified. No `cta`
+is added here; the repository's own support link remains separate.
+
+`tier` remains `contributed`. Tenable sets partner/review/vetted metadata, and
+successful interoperability does not grant those statuses. Submit the existing
+MCP listing update and new skill listing as separate pull requests.
 
 **`Cloudflare` is not listed under `integrations`.** It is not in the validator's
 vocabulary, so the design document's assumption that it could be added in the
@@ -78,6 +73,9 @@ listing submission.
   requested acknowledgment on the upstream pull request before it merged.
 - Full Hexa interoperability remains a separate verification gate from Exchange
   publication and successful MCP authentication.
+
+- That gate passed for the bounded observed-finding workflow on 2026-10-10;
+  accepted-risk, remediation and false-positive scenarios remain separate checks.
 
 ## Verified since the listing was first written
 

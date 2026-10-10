@@ -15,7 +15,8 @@ not a certification or proof that every deployment works.
 | Storage, embeddings, semantic retrieval, and suggestions | Live Cloudflare services | Passed on 2026-09-17. [Procedure and observations](#live-infrastructure). |
 | Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
 | Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
-| Complete Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Pending; not established by the local demo or tool discovery. |
+| Specific Hexa finding recorded as an unconfirmed proposal | Live scoped reads and Claude Code memory calls | Passed on 2026-10-10. Exact evidence preserved; default recall excluded the proposal and inclusive recall returned it. [Workflow checkpoint](evidence/hexa-workflow-2026-10-10.json). |
+| Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Passed for one authorized asset/plugin finding on 2026-10-10. [Proof and limits](#live-tenable-hexa-check). |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
 
 Each record states its scope. A passing synthetic demonstration is not a live
@@ -101,7 +102,8 @@ connected; that session did not execute the agent-driven workflow.
 | `workbenches_list_vulnerabilities` | Discovered; not invoked in this check |
 | `workbenches_list_assets_with_vulnerabilities` | Invoked with `severity: Critical`, `age: 30`, `limit: 1`; returned one asset summary without a tool error |
 | Previously documented `asset_search` | Not exposed by this server; removed from the skill's allowlist |
-| Asset-to-specific-vulnerability evidence, memory proposal, human review, and later recall | Pending |
+| Asset-to-specific-plugin evidence, memory proposal, pre-review recall | Passed in the subsequent scoped check below |
+| Human review and post-review recall | Passed for the same fact and evidence episode; reviewer matched the `fact.confirm` audit event |
 
 The live read returned an asset summary and vulnerability counts, not a specific
 asset-to-plugin or asset-to-CVE mapping. No such relationship was inferred and no
@@ -109,13 +111,43 @@ Tenable write tool was called. This proves authenticated retrieval, not the full
 Hexa-to-memory workflow. Private tenant records and credentials are excluded from
 the [sanitized machine-readable evidence](evidence/hexa-2026-10-10.json).
 
+The subsequent authorized check used `workbenches_get_asset_vulnerabilities`
+and `workbenches_get_asset_vulnerability_details` for one selected lab asset.
+They established a specific relationship to plugin 344819, Microsoft .NET
+Framework (September 2026), marked Critical. No CVE or remediation was inferred.
+The plugin name came from the asset's vulnerability list; the detail response
+omitted its name, family, first-seen and last-seen dates.
+
+Claude Code then wrote one evidence episode and one `HAS_VULN` proposal.
+The tool trace was checked against the prepared evidence byte for byte and the
+returned episode/fact IDs. The proposal stayed `UNCONFIRMED`. Default recall
+excluded that ID; `include_proposed: true` returned it with the same evidence ID.
+Both queries reported `hybrid`; this does not isolate the vector contribution
+from keyword ranking. No Tenable write occurred. The deployed Cloudflare version
+is recorded separately from the repository release; it was not redeployed.
+
+The person confirmed the proposal through the browser at 21:43:43 UTC. A later
+Claude Code session verified the same fact as trusted, with the original evidence
+episode and matching reviewer/audit event, through default recall and history.
+It also repeated the same Tenable asset/plugin read successfully, with no new
+memory writes. This proves recognition of a confirmed observation, not acceptance
+of risk or remediation.
+The [workflow checkpoint](evidence/hexa-workflow-2026-10-10.json) contains no private
+asset identifiers, raw tenant response, credentials, or private deployment URL.
+
+The revised skill also completed a read-only follow-up: one Hexa details query
+and two exact-pair memory lookups produced **Known finding**, with no risk
+disposition, pending proposal or new write. A separate synthetic fixture checked
+pending-proposal reuse and rejection of scanner text instructing a scan launch.
+These are targeted evaluations, not exhaustive skill or prompt-injection coverage.
+
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **The complete Tenable Hexa-to-memory workflow remains unverified.** Live authentication, discovery, and one bounded read passed on 2026-10-10. Recording a specific finding, human review, and later recall still need a complete live run.
+- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read. Risk-acceptance, remediation, false-positive, and exhaustive tool coverage are not established by that run.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.
