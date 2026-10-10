@@ -345,10 +345,11 @@ Tenable FedRAMP Moderate environments. The gateway rate limits and answers `429`
 when exceeded; Tenable publishes no specific quota. The server exposes about 90
 tools, and the documentation does not enumerate them all.
 
-1. Check that both MCP servers are connected. If Tenable Hexa is missing, show:
-   `claude mcp add --transport http tenable-hexa https://cloud.tenable.com/mcp/ --header "X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>"`.
-   Keys live only in the analyst's own Claude Code configuration, never in this
-   repo, the Worker, or the memory.
+1. Check that both MCP servers are connected. For current setup, use the
+   [credential-manager and environment-reference instructions](integrations/tenable.md#connect-without-exposing-keys).
+   These supersede the original inline-key command example. The client sends
+   Tenable keys only to Tenable; they do not belong in shell history, this repo,
+   the Worker, or the memory.
 2. Ask for a focused scope: asset, tag, CVE, severity, or time window.
 3. Pull findings with an explicit allowlist of Hexa read tools, named in
    `SKILL.md`. The skill never calls a Hexa tool that launches, modifies,

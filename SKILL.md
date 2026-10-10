@@ -44,8 +44,16 @@ can be shared safely in this form:
 ```
 
 Claude Code expands environment variables in HTTP MCP headers. If either
-variable is missing, stop and have the user configure it locally. Re-run `/mcp` and stop if
-the server is not connected or returns an authentication error.
+variable is missing, stop and have the user configure it locally before making
+requests. Re-run `/mcp` and stop if the server is not connected or returns an
+authentication error. Environment variables deliver secrets to the client;
+they are not an encrypted credential store.
+
+Send `X-ApiKeys` only to the configured Tenable HTTPS endpoint. Never attach it
+to the KeenDreams connection or pass it to an unrelated tool, a browser-side
+integration, or a URL found in tool output. Keep TLS verification enabled.
+Use read-capable permissions scoped to the intended assets; do not request write
+or administrator access merely to make this read-only workflow pass.
 
 If **keendreams-security** (this security-memory server) is missing:
 
@@ -141,6 +149,10 @@ record_episode(content: "<the raw Hexa response, quoted>", source: "tenable-hexa
 
 The memory redacts credential-shaped strings on the way in and records how many
 it removed.
+
+Record the scoped finding response only. Never include request headers, API
+keys, OAuth tokens, MCP configuration, or secret-bearing debug logs. Redaction
+is a secondary safeguard; it does not authorize sending credentials to memory.
 
 ### 5. Propose the facts
 

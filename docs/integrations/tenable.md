@@ -39,10 +39,30 @@ headers, so a project `.mcp.json` can contain references rather than credentials
 }
 ```
 
-Your Tenable keys stay in your local environment; the MCP configuration contains
-only variable names. This project never sees the keys.
-Run `/mcp` in Claude Code and confirm both `tenable-hexa` and
+The configuration above contains variable references, not stored secrets. Your
+MCP client resolves the values locally and sends the `X-ApiKeys` header to
+Tenable over HTTPS. KeenDreams Security does not require that header or those
+keys. Its separate MCP connection uses the deployer's OAuth sign-in.
+
+Environment variables are a delivery mechanism, not an encrypted credential
+store. Load them from your credential manager into the intended client process;
+avoid committing them to an environment file or exposing them in debug output.
+If either key is unavailable, stop setup before making requests. Do not use
+placeholder credentials, widen permissions, or disable authentication to make
+a connection succeed. Run `/mcp` and confirm both the Tenable connection and
 `keendreams-security` are connected before querying any finding.
+
+Only the Tenable connection receives the Tenable authentication header. Never
+copy that header to the KeenDreams connection, a browser-side integration, or a
+different provider. Keep TLS certificate verification enabled. A custom adapter
+must validate the destination and must not forward credentials across a redirect
+to another origin.
+
+Evidence episodes contain the scoped finding response, never API keys,
+authorization headers, client configuration, or diagnostic logs containing
+secrets. Memory's credential redaction is an additional safeguard, not a reason
+to submit credentials as evidence. Public verification artifacts and screenshots
+must omit credentials and private asset identifiers.
 
 An existing connection named `tenable` can be used without creating a second
 connection. The skill identifies the Tenable endpoint and uses the actual tool
