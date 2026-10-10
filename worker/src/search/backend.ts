@@ -82,25 +82,34 @@ export function backendFromEnv(env: SearchEnv): SearchBackend | null {
     suggestModel,
 
     async embed(texts) {
+      let result: unknown;
       try {
-        const result = await ai.run(EMBEDDING_MODEL, {
+        result = await ai.run(EMBEDDING_MODEL, {
           text: texts.map((text) => text.slice(0, EMBED_CHARS)),
         });
-        const data = (result as { data?: unknown } | null)?.data;
-        if (!Array.isArray(data) || data.length !== texts.length) {
-          throw new Error(`expected ${texts.length} embeddings`);
-        }
-        const embeddings: number[][] = [];
-        for (const vector of data) {
-          if (!isEmbeddingVector(vector)) {
-            throw new Error("the embedding response contains an invalid vector");
-          }
-          embeddings.push(vector);
-        }
-        return embeddings;
       } catch (error) {
         throw unavailable("the embedding model", error);
       }
+      // Only locally generated validation details reach callers. Binding errors
+      // above remain opaque; dimensions help the deployment health check.
+      const data = (result as { data?: unknown } | null)?.data;
+      if (!Array.isArray(data) || data.length !== texts.length) {
+        throw new MemoryError("unavailable", "the embedding response has an invalid batch size");
+      }
+      const embeddings: number[][] = [];
+      for (const vector of data) {
+        if (Array.isArray(vector) && vector.length !== EMBEDDING_DIMENSIONS) {
+          throw new MemoryError(
+            "unavailable",
+            `Returned ${vector.length} dimensions but the index expects ${EMBEDDING_DIMENSIONS}.`,
+          );
+        }
+        if (!isEmbeddingVector(vector)) {
+          throw new MemoryError("unavailable", "the embedding response contains an invalid vector");
+        }
+        embeddings.push(vector);
+      }
+      return embeddings;
     },
 
     async upsert(items) {
