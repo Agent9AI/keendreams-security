@@ -70,7 +70,8 @@ Partner integrations should also send Tenable's documented User-Agent format:
 version. Keep credentials and private deployment addresses out of committed files.
 
 Discover the live Hexa tools before querying findings. On 2026-10-10, the checked
-server exposed 95 tools, including the three below; `asset_search` was absent.
+server exposed 95 tools; `asset_search` was absent. The two asset-scoped
+vulnerability tools below were also invoked successfully in a bounded live check.
 Tool availability and arguments can change. An unavailable tool is a coverage
 gap, not a reason to guess a replacement or broaden the query.
 
@@ -82,6 +83,14 @@ same server. Call only tools from this allowlist:
 - `tenable_one_search_assets`
 - `workbenches_list_vulnerabilities`
 - `workbenches_list_assets_with_vulnerabilities`
+- `workbenches_get_asset_vulnerabilities`
+- `workbenches_get_asset_vulnerability_details`
+
+Use the last two only for the agreed asset UUID, and the details tool only for a
+plugin explicitly associated with that asset by the source response. They do not
+provide a general permission to query other assets. On the checked server their
+schemas accepted `asset_id`, optional `age`, and (for details) required integer
+`plugin_id`. Discover and follow the actual schemas before calling them.
 
 If you need something these cannot answer, run `tools/list` against Hexa, show
 the person the specific tool you propose to call, say what it does, and wait for
@@ -129,8 +138,8 @@ timestamp unless its documented semantics establish that meaning.
 
 An asset summary containing vulnerability counts does not establish a specific
 asset-to-CVE or asset-to-plugin relationship. If the response lacks that mapping,
-stop before asserting `HAS_VULN`. Request approval for a scoped read tool that
-returns the missing evidence, following the allowlist rule above. Never pair an
+stop before asserting `HAS_VULN`. Use the allowed asset-scoped reads to retrieve
+the mapping; request agreement before using any other tool. Never pair an
 asset summary with an unrelated tenant-wide vulnerability list.
 
 ### 3. Ask memory what is already known
@@ -140,6 +149,10 @@ For each asset and vulnerability pair, call `find_facts` on the memory server:
 ```
 find_facts(subject: "asset:<host>", object: "cve:<CVE-ID>")
 ```
+
+When the source establishes a plugin relationship without a CVE mapping, use
+`tenable-plugin:<numeric-plugin-id>` as the object. A plugin can cover several
+CVEs; never manufacture one or infer every CVE from the plugin name.
 
 Look for `ACCEPTED_RISK`, `FALSE_POSITIVE` and `REMEDIATED`. Note who confirmed
 each one, when, and any expiry. Use `recall` instead when the question is

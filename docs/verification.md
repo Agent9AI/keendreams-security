@@ -16,6 +16,7 @@ not a certification or proof that every deployment works.
 | Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
 | Claude Code memory tool execution | Live authenticated `find_facts` call | Passed on 2026-10-10 for one selected asset; zero current facts returned, no writes. [Sanitized record](evidence/memory-client-read-2026-10-10.json). |
 | Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
+| Specific Hexa finding recorded as an unconfirmed proposal | Live scoped reads and Claude Code memory calls | Passed on 2026-10-10. Exact evidence preserved; default recall excluded the proposal and inclusive recall returned it. [Workflow checkpoint](evidence/hexa-workflow-2026-10-10.json). |
 | Complete Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Pending; not established by the local demo or tool discovery. |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
 
@@ -108,7 +109,8 @@ workflow. [Read-check record](evidence/memory-client-read-2026-10-10.json).
 | `workbenches_list_vulnerabilities` | Discovered; not invoked in this check |
 | `workbenches_list_assets_with_vulnerabilities` | Invoked with `severity: Critical`, `age: 30`, `limit: 1`; returned one asset summary without a tool error |
 | Previously documented `asset_search` | Not exposed by this server; removed from the skill's allowlist |
-| Asset-to-specific-vulnerability evidence, memory proposal, human review, and later recall | Pending |
+| Asset-to-specific-plugin evidence, memory proposal, pre-review recall | Passed in the subsequent scoped check below |
+| Human review and post-review recall | Pending |
 
 The live read returned an asset summary and vulnerability counts, not a specific
 asset-to-plugin or asset-to-CVE mapping. No such relationship was inferred and no
@@ -116,13 +118,32 @@ Tenable write tool was called. This proves authenticated retrieval, not the full
 Hexa-to-memory workflow. Private tenant records and credentials are excluded from
 the [sanitized machine-readable evidence](evidence/hexa-2026-10-10.json).
 
+The subsequent authorized check used `workbenches_get_asset_vulnerabilities`
+and `workbenches_get_asset_vulnerability_details` for one selected lab asset.
+They established a specific relationship to plugin 344819, Microsoft .NET
+Framework (September 2026), marked Critical. No CVE or remediation was inferred.
+The plugin name came from the asset's vulnerability list; the detail response
+omitted its name, family, first-seen and last-seen dates.
+
+Claude Code then wrote one evidence episode and one `HAS_VULN` proposal.
+The tool trace was checked against the prepared evidence byte for byte and the
+returned episode/fact IDs. The proposal stayed `UNCONFIRMED`. Default recall
+excluded that ID; `include_proposed: true` returned it with the same evidence ID.
+Both queries reported `hybrid`; this does not isolate the vector contribution
+from keyword ranking. No Tenable write occurred. The deployed Cloudflare version
+is recorded separately from the repository release; it was not redeployed.
+
+Human browser review and the post-review recall/history check remain pending.
+The [workflow checkpoint](evidence/hexa-workflow-2026-10-10.json) contains no private
+asset identifiers, raw tenant response, credentials, or private deployment URL.
+
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **The complete Tenable Hexa-to-memory workflow remains unverified.** Live authentication, discovery, and one bounded read passed on 2026-10-10. Recording a specific finding, human review, and later recall still need a complete live run.
+- **The complete Tenable Hexa-to-memory workflow remains unverified.** Live discovery, scoped finding retrieval, evidence recording, an unconfirmed proposal, and pre-review recall checks passed on 2026-10-10. Human browser review and post-review recall/history remain pending.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.

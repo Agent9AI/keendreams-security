@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "verification_level": "mapped_finding_to_unconfirmed_memory",
+  "full_workflow_verified": false,
+  "tenable_server": {"name": "Tenable VM MCP", "version": "4.0.10"},
+  "scope": "one authorized partner-lab asset and one explicitly mapped plugin finding",
+  "source_reads": [
+    {"tool": "workbenches_get_asset_vulnerabilities", "observed_at": "2026-10-10T21:15:37.222Z", "age_argument": 30, "is_error": false},
+    {"tool": "workbenches_get_asset_vulnerability_details", "observed_at": "2026-10-10T21:16:04.238Z", "age_argument": 30, "is_error": false}
+  ],
+  "finding": {
+    "plugin_id": 344819,
+    "plugin_name": "Microsoft .NET Framework (September 2026)",
+    "plugin_name_source": "selected line from the same asset's vulnerability list",
+    "severity": "Critical",
+    "specific_asset_to_plugin_mapping_verified": true,
+    "cve_inferred": false,
+    "missing_detail_fields": ["plugin_name", "plugin_family", "first_seen", "last_seen"]
+  },
+  "memory_client": {"name": "Claude Code", "version": "2.1.296", "authentication": "existing OAuth connection"},
+  "memory_deployment": {
+    "version_id": "bb913978-9e24-44c4-8e2a-20be3d5dc212",
+    "deployed_at": "2026-09-22T16:16:22.740306Z",
+    "traffic_percentage": 100,
+    "source_revision": null,
+    "source_revision_note": "Cloudflare deployment metadata identifies the Worker version; a Git commit was not independently established."
+  },
+  "memory_checks": {
+    "checked_at": "2026-10-10T21:17:25.430Z",
+    "prior_current_matching_facts": 0,
+    "prior_matching_proposals": 0,
+    "episodes_written": 1,
+    "proposals_written": 1,
+    "predicate": "HAS_VULN",
+    "object_kind": "tenable-plugin",
+    "exact_prepared_evidence_preserved": true,
+    "proposal_cites_returned_episode": true,
+    "returned_status": "proposed",
+    "returned_label": "UNCONFIRMED",
+    "default_recall_excludes_specific_proposal": true,
+    "inclusive_recall_includes_specific_proposal_and_evidence": true,
+    "reported_search_modes": ["hybrid", "hybrid"]
+  },
+  "human_review": {"status": "pending"},
+  "post_review_recall": {"status": "pending"},
+  "tenable_write_tool_calls": 0,
+  "privacy": {
+    "asset_identifiers_included": false,
+    "credentials_included": false,
+    "private_deployment_addresses_included": false,
+    "raw_tenant_response_included": false,
+    "tenant_totals_included": false
+  },
+  "limitations": [
+    "Maintainer-recorded evidence, not an independent certification.",
+    "Source reads used a direct MCP client; memory calls used Claude Code.",
+    "Hybrid is the returned mode; it does not by itself isolate semantic ranking from keyword retrieval.",
+    "The asset vulnerability list abbreviated its output; no exhaustive asset or tenant coverage is claimed.",
+    "The age argument is recorded without assuming its timestamp semantics.",
+    "This confirms an observed finding only; no remediation, false positive, or risk acceptance was asserted.",
+    "Human browser confirmation, later recall and repeat-query recognition remain pending."
+  ]
+}

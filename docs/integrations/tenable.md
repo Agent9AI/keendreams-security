@@ -8,8 +8,9 @@ Hexa as an evidence source. The core memory layer serves applications and agents
 through the same MCP tools. [How the components fit together](../applications-and-agents.md).
 
 > **Live verification, 2026-10-10:** Hexa authentication, tool discovery, and one
-> bounded asset-with-vulnerabilities query passed. The full finding-to-memory,
-> human-review, and recall workflow remains to be verified. See the
+> bounded finding retrieval passed. One specific plugin finding was recorded as
+> an unconfirmed memory proposal and excluded from default recall. Human review
+> and post-review recall remain pending. See the
 > [verification record](../verification.md#live-tenable-hexa-check).
 
 Tenable's [Hexa AI MCP server](https://docs.tenable.com/exposure-management/Content/getting-started/hexa-AI-MCP.htm) exposes your exposure data to an MCP client. Connect both servers in the same session and an analyst can pull live findings from Tenable and check them against what the team already decided.
@@ -73,7 +74,7 @@ vendor, product, and version, as described in
 
 > **Note:** Hexa includes tools that write as well as tools that read. Documented write tools include `scan_create`, `scan_launch`, `ticket_create_issue` and `ticket_notify_assignees`. Anything that reads from Hexa on your behalf should name the specific read tools it may call rather than letting a model choose.
 
-This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists three Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves new facts as proposals for review. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
+This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists five Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves ordinary new facts as proposals for review. The two asset-scoped tools provide the specific asset/plugin evidence needed for an assertion. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
 
 Follow the [skill installation and evaluation guide](hexa-skill.md) to load it
 in Claude Code. A confirmed finding and a triage disposition are different:
