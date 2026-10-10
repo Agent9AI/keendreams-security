@@ -14,10 +14,9 @@ not a certification or proof that every deployment works.
 | First browser review without vendor accounts | Running local app with synthetic fixtures | One click changed pending/confirmed counts from 3/1 to 2/2; audit entries increased from 8 to 9 and remained intact. [Screenshots](start-here.md#1-see-the-review-workflow-without-any-accounts) · [Recorded result](evidence/local-first-decision-2026-10-10.json). |
 | Storage, embeddings, semantic retrieval, and suggestions | Live Cloudflare services | Passed on 2026-09-17. [Procedure and observations](#live-infrastructure). |
 | Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
-| Claude Code memory tool execution | Live authenticated `find_facts` call | Passed on 2026-10-10 for one selected asset; zero current facts returned, no writes. [Sanitized record](evidence/memory-client-read-2026-10-10.json). |
 | Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
 | Specific Hexa finding recorded as an unconfirmed proposal | Live scoped reads and Claude Code memory calls | Passed on 2026-10-10. Exact evidence preserved; default recall excluded the proposal and inclusive recall returned it. [Workflow checkpoint](evidence/hexa-workflow-2026-10-10.json). |
-| Complete Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Pending; not established by the local demo or tool discovery. |
+| Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Passed for one authorized asset/plugin finding on 2026-10-10. [Proof and limits](#live-tenable-hexa-check). |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
 
 Each record states its scope. A passing synthetic demonstration is not a live
@@ -96,12 +95,6 @@ version `4.0.10`, protocol `2025-03-26`, and 95 tools without a further results 
 An actual Claude Code session also reported both Tenable and KeenDreams Security
 connected; that session did not execute the agent-driven workflow.
 
-A separate Claude Code check at 21:10 UTC successfully executed `find_facts`
-against the deployed memory for the selected asset. It returned zero current
-facts without a tool error. This confirms actual authenticated memory tool use;
-it made no Tenable calls or memory writes and does not complete the cross-system
-workflow. [Read-check record](evidence/memory-client-read-2026-10-10.json).
-
 | Check | Result |
 |---|---|
 | Hexa authentication and `tools/list` | Passed |
@@ -110,7 +103,7 @@ workflow. [Read-check record](evidence/memory-client-read-2026-10-10.json).
 | `workbenches_list_assets_with_vulnerabilities` | Invoked with `severity: Critical`, `age: 30`, `limit: 1`; returned one asset summary without a tool error |
 | Previously documented `asset_search` | Not exposed by this server; removed from the skill's allowlist |
 | Asset-to-specific-plugin evidence, memory proposal, pre-review recall | Passed in the subsequent scoped check below |
-| Human review and post-review recall | Pending |
+| Human review and post-review recall | Passed for the same fact and evidence episode; reviewer matched the `fact.confirm` audit event |
 
 The live read returned an asset summary and vulnerability counts, not a specific
 asset-to-plugin or asset-to-CVE mapping. No such relationship was inferred and no
@@ -133,9 +126,20 @@ Both queries reported `hybrid`; this does not isolate the vector contribution
 from keyword ranking. No Tenable write occurred. The deployed Cloudflare version
 is recorded separately from the repository release; it was not redeployed.
 
-Human browser review and the post-review recall/history check remain pending.
+The person confirmed the proposal through the browser at 21:43:43 UTC. A later
+Claude Code session verified the same fact as trusted, with the original evidence
+episode and matching reviewer/audit event, through default recall and history.
+It also repeated the same Tenable asset/plugin read successfully, with no new
+memory writes. This proves recognition of a confirmed observation, not acceptance
+of risk or remediation.
 The [workflow checkpoint](evidence/hexa-workflow-2026-10-10.json) contains no private
 asset identifiers, raw tenant response, credentials, or private deployment URL.
+
+The revised skill also completed a read-only follow-up: one Hexa details query
+and two exact-pair memory lookups produced **Known finding**, with no risk
+disposition, pending proposal or new write. A separate synthetic fixture checked
+pending-proposal reuse and rejection of scanner text instructing a scan launch.
+These are targeted evaluations, not exhaustive skill or prompt-injection coverage.
 
 ## Known limitations
 
@@ -143,7 +147,7 @@ Stated plainly, because a security tool that oversells itself is worse than usel
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **The complete Tenable Hexa-to-memory workflow remains unverified.** Live discovery, scoped finding retrieval, evidence recording, an unconfirmed proposal, and pre-review recall checks passed on 2026-10-10. Human browser review and post-review recall/history remain pending.
+- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read. Risk-acceptance, remediation, false-positive, and exhaustive tool coverage are not established by that run.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.

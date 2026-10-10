@@ -163,6 +163,11 @@ filter expired facts. Also query the exact pair with `status: "proposed"` to
 identify pending work before proposing it again. If a result reaches its limit,
 report incomplete coverage rather than concluding no other decisions exist.
 
+For a focused pair-level report, those two exact lookups are sufficient. Do not
+add `get_entity` or `explore_graph` calls unless the person requested wider entity
+or relationship context. A tool denied by the session's permissions is a boundary:
+report the limitation and do not retry that tool with different arguments.
+
 Classify each pair by the returned evidence:
 
 - **New:** no current fact or matching pending proposal was found within the

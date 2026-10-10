@@ -10,7 +10,7 @@ domains: ["vulnerability-management", "ai-security"]
 integrations: ["Tenable", "Tenable Hexa AI MCP"]
 date_added: 2026-10-10
 contribution_agreement_date: 2026-09-22T16:37:44Z
-works_with_tenable_hexa_mcp: false
+works_with_tenable_hexa_mcp: true
 compatible_platforms: ["Claude Code"]
 invocation: "/hexa-to-memory"
 ---
@@ -63,8 +63,11 @@ asks for one in conversation and never stores one.
 ## Install and evaluate
 
 Follow the repository's
-[Claude Code installation guide](https://github.com/Agent9AI/keendreams-security/blob/main/docs/integrations/hexa-skill.md)
+[Claude Code installation guide](https://github.com/Agent9AI/keendreams-security/blob/main/docs/integrations/tenable.md#install-the-claude-code-skill)
 and invoke `/hexa-to-memory` with one agreed asset or vulnerability scope.
 The skill requires both MCP connections and permission to store the selected
-evidence in the chosen memory client. The repository's verification record
-separates live connection tests from the still-pending complete workflow.
+evidence in the chosen memory client. The repository documents a live bounded
+finding-to-proposal, human-review, and recall workflow, plus targeted skill
+evaluations. Its [verification record](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-tenable-hexa-check)
+separates real results from synthetic fixtures and untested scenarios. No Tenable
+certification or full coverage of risk-disposition workflows is claimed.

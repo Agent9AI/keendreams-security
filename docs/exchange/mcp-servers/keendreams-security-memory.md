@@ -16,10 +16,10 @@ tags:
     "cloudflare-workers",
   ]
 domains: ["vulnerability-management", "ai-security"]
-integrations: ["Tenable"]
+integrations: ["Tenable", "Tenable Hexa AI MCP"]
 date_added: 2026-09-17
 contribution_agreement_date: 2026-09-22T16:37:44Z
-works_with_tenable_hexa_mcp: false
+works_with_tenable_hexa_mcp: true
 transport: "http"
 runtime: "node"
 auth_method: "oauth2"
@@ -125,3 +125,17 @@ checks each one against what the team already decided, and records the differenc
 proposals for review. The allowlist is deliberate. Hexa exposes roughly ninety tools that
 mix reads with writes, including ones that launch scans and notify ticket assignees, so the
 skill names the tools it may call rather than letting a model choose.
+
+## Verified Hexa workflow
+
+On October 10, 2026, one authorized partner-lab asset/plugin finding completed a
+live sequence: scoped Hexa retrieval, exact evidence recording, an unconfirmed
+proposal excluded from normal recall, a real person's browser confirmation, and
+later recall with the same fact, evidence and reviewer. A repeated Hexa read
+still reported the finding. No Tenable write tool ran.
+
+The [verification report](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-tenable-hexa-check)
+and machine-readable evidence state the tested clients, deployment version and
+limits. This proves a bounded observed-finding workflow; it is not risk
+acceptance, remediation, or Tenable certification. Tenable remains optional for
+the core memory layer.

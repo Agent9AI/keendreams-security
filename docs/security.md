@@ -40,10 +40,6 @@ backend. Review the client's model-provider and logging settings before using
 private evidence. Read access to a shared tenant does not itself authorize
 copying its findings into a different memory or publishing them.
 
-The [review package](exchange/review-package.md) expands this into a destination
-and authority map with source references, including OAuth storage and build-time
-dependencies.
-
 ## What the trust boundary does not promise
 
 The default MCP path and every model suggestion create proposals. An administrator

@@ -220,7 +220,12 @@ KeenDreams. A decision recorded here does not create a Tenable risk-acceptance
 rule or change a scan result. Hexa requires an eligible Tenable One license,
 enabled MCP access, and an appropriately permitted API-key owner.
 
-The benefit to demonstrate is a later investigation that retrieves the earlier
+**Live Hexa workflow verified, October 10, 2026:** one real asset/plugin finding
+was recorded as an unconfirmed proposal, confirmed by a person in the browser,
+and recalled with the same evidence and reviewer. A later read recognized the
+existing finding. [Inspect the proof and its limits](docs/verification.md#live-tenable-hexa-check).
+
+The broader benefit is a later investigation that retrieves an earlier
 decision, its reason, and its evidence while comparing them with fresh findings.
 This complements Tenable's own history and decision features; it does not claim
 that Tenable lacks memory or replace Tenable as the source of its findings.

@@ -1,13 +1,26 @@
 {
   "schema_version": 1,
   "date": "2026-10-10",
-  "verification_level": "mapped_finding_to_unconfirmed_memory",
-  "full_workflow_verified": false,
-  "tenable_server": {"name": "Tenable VM MCP", "version": "4.0.10"},
+  "verification_level": "bounded_live_finding_review_and_recall",
+  "full_workflow_verified": true,
+  "tenable_server": {
+    "name": "Tenable VM MCP",
+    "version": "4.0.10"
+  },
   "scope": "one authorized partner-lab asset and one explicitly mapped plugin finding",
   "source_reads": [
-    {"tool": "workbenches_get_asset_vulnerabilities", "observed_at": "2026-10-10T21:15:37.222Z", "age_argument": 30, "is_error": false},
-    {"tool": "workbenches_get_asset_vulnerability_details", "observed_at": "2026-10-10T21:16:04.238Z", "age_argument": 30, "is_error": false}
+    {
+      "tool": "workbenches_get_asset_vulnerabilities",
+      "observed_at": "2026-10-10T21:15:37.222Z",
+      "age_argument": 30,
+      "is_error": false
+    },
+    {
+      "tool": "workbenches_get_asset_vulnerability_details",
+      "observed_at": "2026-10-10T21:16:04.238Z",
+      "age_argument": 30,
+      "is_error": false
+    }
   ],
   "finding": {
     "plugin_id": 344819,
@@ -16,9 +29,18 @@
     "severity": "Critical",
     "specific_asset_to_plugin_mapping_verified": true,
     "cve_inferred": false,
-    "missing_detail_fields": ["plugin_name", "plugin_family", "first_seen", "last_seen"]
+    "missing_detail_fields": [
+      "plugin_name",
+      "plugin_family",
+      "first_seen",
+      "last_seen"
+    ]
   },
-  "memory_client": {"name": "Claude Code", "version": "2.1.296", "authentication": "existing OAuth connection"},
+  "memory_client": {
+    "name": "Claude Code",
+    "version": "2.1.296",
+    "authentication": "existing OAuth connection"
+  },
   "memory_deployment": {
     "version_id": "bb913978-9e24-44c4-8e2a-20be3d5dc212",
     "deployed_at": "2026-09-22T16:16:22.740306Z",
@@ -40,10 +62,29 @@
     "returned_label": "UNCONFIRMED",
     "default_recall_excludes_specific_proposal": true,
     "inclusive_recall_includes_specific_proposal_and_evidence": true,
-    "reported_search_modes": ["hybrid", "hybrid"]
+    "reported_search_modes": [
+      "hybrid",
+      "hybrid"
+    ]
   },
-  "human_review": {"status": "pending"},
-  "post_review_recall": {"status": "pending"},
+  "human_review": {
+    "status": "passed",
+    "confirmed_at": "2026-10-10T21:43:43.551Z",
+    "audit_action": "fact.confirm",
+    "reviewer_identity_present": true,
+    "reviewer_matches_audit_actor": true,
+    "reviewer_identity_published": false
+  },
+  "post_review_recall": {
+    "status": "passed",
+    "observed_at": "2026-10-10T21:44:23.447Z",
+    "same_fact_id": true,
+    "same_evidence_episode_id": true,
+    "returned_status": "trusted",
+    "include_proposed": false,
+    "search_mode": "hybrid",
+    "reviewer_attribution_present": true
+  },
   "tenable_write_tool_calls": 0,
   "privacy": {
     "asset_identifiers_included": false,
@@ -59,6 +100,31 @@
     "The asset vulnerability list abbreviated its output; no exhaustive asset or tenant coverage is claimed.",
     "The age argument is recorded without assuming its timestamp semantics.",
     "This confirms an observed finding only; no remediation, false positive, or risk acceptance was asserted.",
-    "Human browser confirmation, later recall and repeat-query recognition remain pending."
-  ]
+    "The live test covered one HAS_VULN finding, not accepted risk, false-positive adjudication, or remediation.",
+    "The companion skill instruction set was not invoked verbatim for the whole live sequence; the trace used a constrained verification procedure.",
+    "No live Origin Observatory integration is established by this test."
+  ],
+  "repeat_query": {
+    "status": "passed",
+    "client": "Claude Code connected to both MCP servers",
+    "tool": "workbenches_get_asset_vulnerability_details",
+    "same_asset_and_plugin": true,
+    "age_argument": 30,
+    "same_finding_reported": true,
+    "new_memory_writes": 0,
+    "interpretation": "known confirmed finding, not a risk disposition"
+  },
+  "skill_follow_up": {
+    "status": "passed",
+    "mode": "read-only exact-pair triage",
+    "observed_at": "2026-10-10T21:47:43.935Z",
+    "skill_sha256": "5aadcbf2ce64a6a4518676bbe1f407d4c1bed5241d405c33331c2c90376447ef",
+    "tool_calls": 3,
+    "tool_errors": 0,
+    "memory_writes": 0,
+    "tenable_writes": 0,
+    "reported_classification": "Known finding",
+    "reported_prior_dispositions": 0,
+    "reported_pending_proposals": 0
+  }
 }

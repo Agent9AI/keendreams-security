@@ -9,8 +9,9 @@ through the same MCP tools. [How the components fit together](../applications-an
 
 > **Live verification, 2026-10-10:** Hexa authentication, tool discovery, and one
 > bounded finding retrieval passed. One specific plugin finding was recorded as
-> an unconfirmed memory proposal and excluded from default recall. Human review
-> and post-review recall remain pending. See the
+> an unconfirmed memory proposal and excluded from default recall, then confirmed
+> by a person and recalled with its original evidence and reviewer. A repeated
+> source query recognized the known finding. See the
 > [verification record](../verification.md#live-tenable-hexa-check).
 
 Tenable's [Hexa AI MCP server](https://docs.tenable.com/exposure-management/Content/getting-started/hexa-AI-MCP.htm) exposes your exposure data to an MCP client. Connect both servers in the same session and an analyst can pull live findings from Tenable and check them against what the team already decided.
@@ -76,14 +77,37 @@ vendor, product, and version, as described in
 
 This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists five Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves ordinary new facts as proposals for review. The two asset-scoped tools provide the specific asset/plugin evidence needed for an assertion. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
 
-Follow the [skill installation and evaluation guide](hexa-skill.md) to load it
-in Claude Code. A confirmed finding and a triage disposition are different:
+Follow the [skill installation instructions](#install-the-claude-code-skill) below.
+A confirmed finding and a triage disposition are different:
 `HAS_VULN` alone does not mean the risk was accepted or the vulnerability fixed.
 
 The workflow runs through an MCP client connected to both servers. It is not a
 background synchronization service. Asset-level counts alone cannot support a
 specific vulnerability assertion; the workflow requires evidence linking the
 particular asset to the CVE or Tenable plugin.
+
+## Install the Claude Code skill
+
+After configuring both MCP connections, install the repository-root `SKILL.md`
+using [Claude Code's personal skill layout](https://code.claude.com/docs/en/skills):
+
+```bash
+mkdir -p ~/.claude/skills
+git clone https://github.com/Agent9AI/keendreams-security.git ~/.claude/skills/hexa-to-memory
+git -C ~/.claude/skills/hexa-to-memory rev-parse HEAD
+```
+
+Review and pin the installed commit for controlled use. If the directory already
+exists, inspect its origin and local changes before updating; do not overwrite it.
+Loading the skill needs no Worker deployment or package installation. Keep
+credentials out of the skill directory. In the project where both MCP connections
+are configured, verify them with `/mcp`, then invoke `/hexa-to-memory` with one
+agreed asset or vulnerability scope. Specify the actual identifiers privately.
+
+The report distinguishes new findings, pending proposals, confirmed observations,
+prior dispositions and conflicts. A prior decision informs review; it does not
+automatically suppress fresh findings. Browser confirmation remains the person's
+action. [Verified behavior and limits](../verification.md#live-tenable-hexa-check).
 
 ## First live evaluation
 
@@ -121,5 +145,6 @@ The MCP-server listing was merged in
 [Tenable PR #189](https://github.com/tenable/cyberagents-exchange/pull/189) and is
 [published on the Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/).
 The [submission directory](../exchange/README.md) contains the listing sources and
-the companion skill. The Hexa interoperability flag remains false until the full
-workflow has been demonstrated; Exchange publication is not interoperability certification.
+the companion skill. The proposed listing update sets the Hexa interoperability
+flag based on the bounded live workflow. The Exchange changes only when Tenable
+merges that update; publication and interoperability testing are not certification.
