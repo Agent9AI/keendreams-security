@@ -97,6 +97,7 @@ any example as verified interoperability.
 | Symptom | Next check |
 |---|---|
 | The local page will not open | Confirm the demo terminal is still running, use its reported port, and open the address on the same computer. |
+| The local demo logs that AI or Vectorize needs a remote binding | Those cloud services are unavailable in the account-free demo; review and audit still work. Investigate the same message in a hosted deployment rather than treating it as expected there. |
 | The demo proposal is no longer pending | A previous local review may already have processed it. Local state can persist across restarts. |
 | A deployed server shows a setup page | Check the named missing settings in your own deployment; do not send their secret values in a support request. |
 | MCP says authentication is required | Complete the client's OAuth login and verify it reports connected before calling tools. |
