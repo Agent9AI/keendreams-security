@@ -66,6 +66,50 @@ describe("reading text out of a Workers AI response", () => {
   });
 });
 
+function backendReturning(result: unknown) {
+  if (!real.AI || !real.VECTORS) throw new Error("Test bindings are unavailable");
+  const ai = new Proxy(real.AI, {
+    get(target, property) {
+      return property === "run" ? async () => result : Reflect.get(target, property);
+    },
+  });
+  const backend = backendFromEnv({ AI: ai, VECTORS: real.VECTORS });
+  if (!backend) throw new Error("Test backend is unavailable");
+  return backend;
+}
+
+describe("embedding response validation", () => {
+  const vector = () => Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0.125);
+
+  it("accepts a complete batch of finite vectors with the configured dimensions", async () => {
+    const data = [vector(), vector()];
+    await expect(backendReturning({ data }).embed(["first", "second"])).resolves.toEqual(data);
+  });
+
+  it.each([
+    ["null vector", null],
+    ["string vector", "invalid"],
+    ["empty vector", []],
+    ["short vector", vector().slice(1)],
+    ["long vector", [...vector(), 0]],
+    ["non-finite number", [...vector().slice(1), Number.NaN]],
+    ["infinity", [...vector().slice(1), Number.POSITIVE_INFINITY]],
+    ["numeric string", [...vector().slice(1), "0.125"]],
+    ["missing values", new Array(EMBEDDING_DIMENSIONS)],
+  ])("rejects a %s as unavailable", async (_name, value) => {
+    const failure = await backendReturning({ data: [value] })
+      .embed(["evidence"])
+      .catch((error: unknown) => error);
+    expect(memoryErrorCode(failure)).toBe("unavailable");
+  });
+
+  it("rejects the whole batch when any vector is malformed", async () => {
+    await expect(
+      backendReturning({ data: [vector(), []] }).embed(["first", "second"]),
+    ).rejects.toThrow("unavailable");
+  });
+});
+
 function captureError(fn: () => unknown): unknown {
   try {
     fn();

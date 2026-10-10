@@ -62,6 +62,15 @@ export function modelText(result: unknown): string {
  */
 type DynamicAi = { run(model: string, inputs: Record<string, unknown>): Promise<unknown> };
 
+function isEmbeddingVector(value: unknown): value is number[] {
+  if (!Array.isArray(value) || value.length !== EMBEDDING_DIMENSIONS) return false;
+  // Iteration visits sparse slots as undefined; Array.every would skip them.
+  for (const coordinate of value) {
+    if (typeof coordinate !== "number" || !Number.isFinite(coordinate)) return false;
+  }
+  return true;
+}
+
 export function backendFromEnv(env: SearchEnv): SearchBackend | null {
   const ai = env.AI;
   const vectors = env.VECTORS;
@@ -77,11 +86,18 @@ export function backendFromEnv(env: SearchEnv): SearchBackend | null {
         const result = await ai.run(EMBEDDING_MODEL, {
           text: texts.map((text) => text.slice(0, EMBED_CHARS)),
         });
-        const data = (result as { data?: number[][] }).data;
+        const data = (result as { data?: unknown } | null)?.data;
         if (!Array.isArray(data) || data.length !== texts.length) {
           throw new Error(`expected ${texts.length} embeddings`);
         }
-        return data;
+        const embeddings: number[][] = [];
+        for (const vector of data) {
+          if (!isEmbeddingVector(vector)) {
+            throw new Error("the embedding response contains an invalid vector");
+          }
+          embeddings.push(vector);
+        }
+        return embeddings;
       } catch (error) {
         throw unavailable("the embedding model", error);
       }
