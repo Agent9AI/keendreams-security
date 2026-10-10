@@ -40,8 +40,8 @@ documented tools include ones that launch scans, create tickets, notify
 assignees and apply tags. A skill that let a model choose freely among them could
 start a scan or message a team on a production estate while trying to triage.
 
-So this skill names the tools it may call. It allowlists four Hexa read tools
-(`tenable_one_search_assets`, `asset_search`, `workbenches_list_vulnerabilities`
+So this skill names the tools it may call. It allowlists three Hexa read tools
+(`tenable_one_search_assets`, `workbenches_list_vulnerabilities`
 and `workbenches_list_assets_with_vulnerabilities`), lists the documented write
 tools it must never call, and tells the model to show the person any other tool
 and wait for agreement rather than infer safety from a name.

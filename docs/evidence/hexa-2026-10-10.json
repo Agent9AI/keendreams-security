@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "verification_level": "authenticated_discovery_and_bounded_read",
+  "full_workflow_verified": false,
+  "source_revision": "4a87d507f74d0d25645bb2af1d81956415a71049",
+  "endpoint": "https://cloud.tenable.com/mcp/",
+  "authentication": {
+    "method": "X-ApiKeys",
+    "result": "passed",
+    "credential_values_recorded": false
+  },
+  "discovery": {
+    "observed_at": "2026-10-10T19:32:56.146Z",
+    "server_name": "Tenable VM MCP",
+    "server_version": "4.0.10",
+    "protocol_version": "2025-03-26",
+    "tool_count": 95,
+    "more_pages": false,
+    "present_allowlisted_tools": [
+      "tenable_one_search_assets",
+      "workbenches_list_vulnerabilities",
+      "workbenches_list_assets_with_vulnerabilities"
+    ],
+    "absent_previously_documented_tools": ["asset_search"]
+  },
+  "claude_code": {
+    "version": "2.1.296",
+    "tenable_connection": "connected",
+    "keendreams_security_connection": "connected",
+    "agent_workflow_executed": false
+  },
+  "read_check": {
+    "observed_at": "2026-10-10T20:11:04.933Z",
+    "client": "direct MCP JSON-RPC test",
+    "tool": "workbenches_list_assets_with_vulnerabilities",
+    "arguments": {"severity": "Critical", "age": 30, "limit": 1},
+    "is_error": false,
+    "returned_asset_count": 1,
+    "response_kind": "asset_summary_with_vulnerability_counts",
+    "specific_asset_to_vulnerability_mapping_verified": false,
+    "tenable_write_tool_calls": 0,
+    "memory_write_tool_calls": 0
+  },
+  "not_verified": [
+    "Specific asset-to-CVE or asset-to-plugin evidence",
+    "Recording the retrieved finding in KeenDreams",
+    "Unconfirmed proposal excluded from default recall",
+    "Human review of the live proposal",
+    "Confirmed finding recalled with evidence and history"
+  ],
+  "privacy": {
+    "asset_identifiers_included": false,
+    "asset_addresses_included": false,
+    "tenant_totals_included": false,
+    "private_deployment_addresses_included": false,
+    "raw_tenant_response_included": false
+  },
+  "limitations": [
+    "This is a sanitized maintainer-recorded test result, not an independent certification.",
+    "Discovery establishes availability, not successful execution of every tool.",
+    "The age argument is recorded verbatim without assuming its timestamp semantics.",
+    "An asset-level vulnerability count cannot establish a specific vulnerability relationship."
+  ]
+}

@@ -186,7 +186,10 @@ Live checks on September 17, 2026 verified Workers AI, Vectorize, hybrid recall,
 and model-generated proposals. They also found a production response-format bug
 that the offline stand-ins missed; the fix is covered by regression tests.
 
-> **Still to verify:** the Hexa recipe against a live Tenable One tenant.
+Live Hexa authentication, tool discovery, and a bounded asset query passed on
+October 10, 2026. [Read the results and their limits](docs/verification.md#live-tenable-hexa-check).
+
+> **Still to verify:** the complete Hexa finding-to-memory, review, and recall workflow.
 > Semantic indexing is asynchronous, and the audit log has no retention policy
 > yet. [Evidence, procedures, and all known limitations](docs/verification.md).
 

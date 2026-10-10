@@ -12,7 +12,10 @@ already decided, and leaves an audit trail a human confirms.
 
 Both MCP servers must be connected in this session.
 
-Check with `/mcp`. If **tenable-hexa** is missing, tell the person to add it with
+Check with `/mcp`. The Tenable connection can be named **tenable-hexa** or
+**tenable**; identify it by its configured `https://cloud.tenable.com/mcp/`
+endpoint (with or without the trailing slash), not by its display name alone.
+Use the actual connection's tool prefix. If neither is connected, tell the person to add it with
 their own Tenable One keys, and stop until they have:
 
 ```
@@ -33,13 +36,21 @@ using it.
 Never ask anyone to paste a key into the conversation. Keys belong in their own
 client configuration and nowhere else.
 
+Partner integrations should also send Tenable's documented User-Agent format:
+`Integration/1.0 (VENDOR; PRODUCT; Build/VERSION)`. Use the actual integration
+version. Keep credentials and private deployment addresses out of committed files.
+
+Discover the live Hexa tools before querying findings. On 2026-10-10, the checked
+server exposed 95 tools, including the three below; `asset_search` was absent.
+Tool availability and arguments can change. An unavailable tool is a coverage
+gap, not a reason to guess a replacement or broaden the query.
+
 ## Safety rules, in order of importance
 
 **1. Only call Hexa tools that read.** Hexa exposes read and write tools in the
 same server. Call only tools from this allowlist:
 
 - `tenable_one_search_assets`
-- `asset_search`
 - `workbenches_list_vulnerabilities`
 - `workbenches_list_assets_with_vulnerabilities`
 
@@ -74,6 +85,18 @@ window.
 ### 2. Pull the findings
 
 Use the allowlisted read tools for exactly that scope. Keep the raw response.
+
+Use only arguments present in each live tool schema, and apply a small result
+limit where supported. Save raw results privately; publish only sanitized test
+evidence. Preserve the requested filters, retrieval time, and any truncation or
+coverage limits. Do not interpret a tool's `age` filter as a particular detection
+timestamp unless its documented semantics establish that meaning.
+
+An asset summary containing vulnerability counts does not establish a specific
+asset-to-CVE or asset-to-plugin relationship. If the response lacks that mapping,
+stop before asserting `HAS_VULN`. Request approval for a scoped read tool that
+returns the missing evidence, following the allowlist rule above. Never pair an
+asset summary with an unrelated tenant-wide vulnerability list.
 
 ### 3. Ask memory what is already known
 
