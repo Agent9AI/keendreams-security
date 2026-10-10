@@ -38,7 +38,8 @@ values. All four were rejected with the expected message.
 
 ## Two claims deliberately left switched off
 
-**`works_with_tenable_hexa_mcp` is `false` and there is no `cta`.**
+**The published MCP listing keeps `works_with_tenable_hexa_mcp` false and has no
+Hexa call to action.**
 
 Setting `cta: "T1"` is what renders the "Powered by Hexa AI" treatment and a
 "Request a Demo" link on the listing, and the validator will only accept it when

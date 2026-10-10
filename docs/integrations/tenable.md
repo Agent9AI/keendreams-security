@@ -2,6 +2,11 @@
 
 # Tenable Hexa integration
 
+**Tenable is optional.** KeenDreams Security works without a Tenable account or
+Tenable One license. This guide covers the additional requirements for using
+Hexa as an evidence source. The core memory layer serves applications and agents
+through the same MCP tools. [How the components fit together](../applications-and-agents.md).
+
 > **Live verification, 2026-10-10:** Hexa authentication, tool discovery, and one
 > bounded asset-with-vulnerabilities query passed. The full finding-to-memory,
 > human-review, and recall workflow remains to be verified. See the
@@ -9,12 +14,55 @@
 
 Tenable's [Hexa AI MCP server](https://docs.tenable.com/exposure-management/Content/getting-started/hexa-AI-MCP.htm) exposes your exposure data to an MCP client. Connect both servers in the same session and an analyst can pull live findings from Tenable and check them against what the team already decided.
 
-```bash
-claude mcp add --transport http tenable-hexa https://cloud.tenable.com/mcp/ \
-  --header "X-ApiKeys: accessKey=<ACCESS_KEY>;secretKey=<SECRET_KEY>"
+## Connect without exposing keys
+
+Tenable requires Tenable One Foundation or Advanced, Hexa AI MCP enabled, a
+read-capable role, and Vulnerability Management API keys. Create or retrieve the
+keys under Settings > My Account > API Keys.
+
+Load the two key values into `TENABLE_ACCESS_KEY` and `TENABLE_SECRET_KEY` from
+your credential manager. Do not paste either value into chat, shell history, or
+version control. Claude Code supports environment-variable expansion in HTTP MCP
+headers, so a project `.mcp.json` can contain references rather than credentials:
+
+```json
+{
+  "mcpServers": {
+    "tenable-hexa": {
+      "type": "http",
+      "url": "https://cloud.tenable.com/mcp/",
+      "headers": {
+        "X-ApiKeys": "accessKey=${TENABLE_ACCESS_KEY};secretKey=${TENABLE_SECRET_KEY}"
+      }
+    }
+  }
+}
 ```
 
-Your Tenable keys stay in your own MCP client configuration. This project never sees them.
+The configuration above contains variable references, not stored secrets. Your
+MCP client resolves the values locally and sends the `X-ApiKeys` header to
+Tenable over HTTPS. KeenDreams Security does not require that header or those
+keys. Its separate MCP connection uses the deployer's OAuth sign-in.
+
+Environment variables are a delivery mechanism, not an encrypted credential
+store. Load them from your credential manager into the intended client process;
+avoid committing them to an environment file or exposing them in debug output.
+If either key is unavailable, stop setup before making requests. Do not use
+placeholder credentials, widen permissions, or disable authentication to make
+a connection succeed. Run `/mcp` and confirm both the Tenable connection and
+`keendreams-security` are connected before querying any finding.
+
+Only the Tenable connection receives the Tenable authentication header. Never
+copy that header to the KeenDreams connection, a browser-side integration, or a
+different provider. Keep TLS certificate verification enabled. A custom adapter
+must validate the destination and must not forward credentials across a redirect
+to another origin.
+
+Evidence episodes contain the scoped finding response, never API keys,
+authorization headers, client configuration, or diagnostic logs containing
+secrets. Memory's credential redaction is an additional safeguard, not a reason
+to submit credentials as evidence. Public verification artifacts and screenshots
+must omit credentials and private asset identifiers.
 
 An existing connection named `tenable` can be used without creating a second
 connection. The skill identifies the Tenable endpoint and uses the actual tool
@@ -31,6 +79,35 @@ The workflow runs through an MCP client connected to both servers. It is not a
 background synchronization service. Asset-level counts alone cannot support a
 specific vulnerability assertion; the workflow requires evidence linking the
 particular asset to the CVE or Tenable plugin.
+
+## First live evaluation
+
+Use one named asset or one CVE. Do not start with the whole tenant.
+
+1. Ask `/hexa-to-memory` to retrieve that scope using its discovered, allowlisted
+   Hexa read tools. Approve any additional scoped read tool explicitly before use.
+2. Record the returned batch as one `tenable-hexa` episode and propose each live
+   asset/finding pair as `HAS_VULN`.
+3. Confirm that default `recall` returns none of the new proposals. Open the
+   returned `/review` link, inspect the quoted Tenable evidence, and confirm or
+   reject at least one proposal.
+4. Run the same recall again. Only the human-confirmed decision should appear,
+   with reviewer, time, and evidence.
+5. Repeat the same Tenable query. The report must distinguish already-triaged
+   findings from new work without issuing any Tenable write action.
+
+| Acceptance check | Pass condition |
+|---|---|
+| Tenable boundary | Only allowlisted or explicitly approved scoped read tools run. |
+| Evidence | One quoted episode records the scoped Hexa response. |
+| Trust | New facts remain `UNCONFIRMED` until browser review. |
+| Recall | Confirmed decisions return with reviewer, time, and evidence. |
+| Repeat work | The second query identifies decisions already made. |
+| Safety | No scan, ticket, tag, dashboard, update, or delete tool runs. |
+
+This sequence proves the useful product claim: KeenDreams is not another scanner;
+it remembers the disposition of scanner findings so the next investigation starts
+from the team's prior evidence and decisions.
 
 ## Exchange submission
 

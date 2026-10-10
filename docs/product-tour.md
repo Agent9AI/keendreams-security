@@ -40,6 +40,7 @@ responses, follow the [evidence-to-decision walkthrough](walkthrough.md).
 
 ## Evaluate it
 
+- [Understand application and agent integration](applications-and-agents.md), including the separate Origin Observatory example and what remains to be demonstrated.
 - [Run the local demo](local-demo.md) to try the browser workflow with sample data.
 - [Deploy in your own account](deployment/README.md) to configure identity and real services.
 - [Read the verification record](verification.md) for completed checks and current limits.

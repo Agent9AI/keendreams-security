@@ -14,18 +14,34 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-235d42" alt="MIT license"></a>
 </p>
 
-**Start the next investigation with the decisions your team already made.**
+**Give your security applications and agents a memory they can explain.**
 
-KeenDreams Security gives agents and analysts a shared record of findings,
-evidence, and review decisions. It runs as an open-source MCP server in **your
-own Cloudflare account**, with a separate memory for each client and a history
-behind each answer.
+KeenDreams Security is an **open-source security memory layer** for applications
+and agents. Record evidence, review proposed facts, and retrieve your team's
+decisions through semantic vector and keyword search. Default recall includes
+only trusted, currently valid facts, with their evidence and history. Deploy it
+in **your own Cloudflare account** and connect through MCP.
 
-[**Product tour**](#the-product-in-two-pages) &nbsp;·&nbsp;
+**No Tenable account or Tenable One license is required to use KeenDreams Security.**
+The optional Tenable Hexa workflow connects exposure data with that memory.
+[See the live results and what remains to verify](docs/verification.md#live-tenable-hexa-check).
+
+[**Start here**](docs/start-here.md) &nbsp;·&nbsp;
+[Product tour](#the-product-in-two-pages) &nbsp;·&nbsp;
 [Deploy](docs/deployment/README.md) &nbsp;·&nbsp;
 [Architecture](docs/architecture.md) &nbsp;·&nbsp;
 [Tool reference](docs/reference/mcp-tools.md) &nbsp;·&nbsp;
+[Tenable Hexa](docs/integrations/tenable.md) &nbsp;·&nbsp;
 [Documentation](docs/README.md)
+
+| Your first step | What you get |
+|---|---|
+| [Try it without accounts](docs/local-demo.md) | Inspect sample evidence, review one proposal, and verify the audit chain locally. |
+| [Connect your application or agent](docs/deployment/README.md) | Deploy your own memory server and connect through OAuth-protected MCP. |
+| [Evaluate Tenable Hexa](docs/integrations/tenable.md) | Read scoped exposure data and test it against your team's recorded decisions. |
+
+[Listed on CyberAgents Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/) ·
+[What is verified](docs/verification.md) · [Get help](.github/SUPPORT.md)
 
 <a id="the-product-in-two-pages"></a>
 
@@ -112,6 +128,26 @@ provenance. [See the reproducible walkthrough](docs/walkthrough.md).
 
 [Explore the workflows](docs/walkthrough.md#practical-workflows).
 
+## Extend an application or an agent
+
+A security application can use KeenDreams to retrieve earlier findings and
+decisions during an investigation. An MCP-connected agent can record evidence,
+propose relationships, and recall reviewed knowledge in a later session. Both
+use the same memory tools and trust rules; neither gains authority to approve a
+finding simply by connecting.
+
+**Origin Observatory is the example security application for the planned
+integration walkthrough.** It has its own investigation tools and evidence
+records. The intended demonstration shows Origin displaying a Tenable finding,
+recording supporting evidence in KeenDreams, and retrieving a reviewed decision
+in a later investigation. Origin is a separate Agent9 project, not a dependency
+or part of this repository's runtime. Its connector belongs in a separate repo.
+
+That application walkthrough has not yet been completed or photographed as live
+integration proof. The product screenshots above show the existing KeenDreams
+local demo. An agent-focused walkthrough will be documented separately.
+[Application and agent integration model](docs/applications-and-agents.md).
+
 <a id="how-it-runs"></a>
 
 ## Your account. Your memory.
@@ -162,6 +198,7 @@ Nine MCP tools. **Six reads, three writes.** All four behavior hints are explici
 The [deployment guide](docs/deployment/README.md) covers prerequisites, bindings,
 settings, and connecting an MCP client. The deployer owns the infrastructure;
 there is no service operated by Agent9 that receives your evidence.
+Cloudflare hosting and selected AI services have their own requirements and costs.
 
 ### Sign-in setup
 
@@ -170,16 +207,31 @@ MCP client. [Follow the sign-in instructions](docs/deployment/README.md#sign-in-
 
 ### Using it with Tenable
 
-The included [`/hexa-to-memory` skill](SKILL.md) uses an explicit allowlist of
-Hexa read tools to compare findings with prior decisions and record proposals.
+**Tenable adds current exposure evidence; KeenDreams makes reviewed knowledge
+reusable across security applications and agents.** Through Hexa MCP, a connected
+client can retrieve scoped asset and vulnerability information, compare it with
+prior decisions, and record new evidence-backed proposals. Where returned by the
+selected Tenable tools, prioritization, affected-asset details, and remediation
+information can give the reviewer more context than a finding title alone.
+
+The included [`/hexa-to-memory` skill](SKILL.md) coordinates that workflow using
+approved read tools. Tenable access remains read-only; memory writes happen in
+KeenDreams. A decision recorded here does not create a Tenable risk-acceptance
+rule or change a scan result. Hexa requires an eligible Tenable One license,
+enabled MCP access, and an appropriately permitted API-key owner.
+
+The benefit to demonstrate is a later investigation that retrieves the earlier
+decision, its reason, and its evidence while comparing them with fresh findings.
+This complements Tenable's own history and decision features; it does not claim
+that Tenable lacks memory or replace Tenable as the source of its findings.
 [Integration guide](docs/integrations/tenable.md) ·
-[Exchange submission status](docs/exchange/README.md).
+[Exchange listing status](docs/exchange/README.md).
 
 <a id="security-posture-and-verification"></a>
 
 ## Built to be inspected
 
-**237 tests across 26 files**, plus typechecking, lint, CodeQL, and full-history
+**238 tests across 26 files**, plus typechecking, lint, CodeQL, and full-history
 secret scanning. The badges above open the actual workflow results.
 
 Live checks on September 17, 2026 verified Workers AI, Vectorize, hybrid recall,
@@ -234,6 +286,12 @@ Run these commands from `worker/`. `npm run types` regenerates bindings under `w
 
 **Built by [Agent9](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security). Owned by you.**
 
-MIT licensed. The complete implementation is here. For deployment, identity setup,
-and integration with your team's scanners and workflows,
-[work with Agent9](https://agent9.dev/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security).
+### Bring security memory into your workflow
+
+KeenDreams Security is MIT licensed. You can deploy and use the complete
+open-source project without purchasing services from Agent9.
+
+For paid help with deployment, identity setup, or integration into your security
+application or agent, **[talk to Agent9](https://agent9.dev/contact/?utm_source=github&utm_medium=readme&utm_campaign=keendreams-security)**.
+Tell us what you want to connect and which workflow you want to improve.
+Project scope, ongoing support, and response commitments are agreed separately.

@@ -6,9 +6,24 @@ This page separates checks that have run from the integrations still waiting for
 live validation. A passing automated suite is evidence of its covered behavior,
 not a certification or proof that every deployment works.
 
+## Evidence at a glance
+
+| Capability | Evidence type | Result and record |
+|---|---|---|
+| Core memory, trust, isolation, and authentication behavior | Automated offline tests | 238 tests across 26 files passed on 2026-10-10; Cloudflare services are simulated in this suite. |
+| First browser review without vendor accounts | Running local app with synthetic fixtures | One click changed pending/confirmed counts from 3/1 to 2/2; audit entries increased from 8 to 9 and remained intact. [Screenshots](start-here.md#1-see-the-review-workflow-without-any-accounts) · [Recorded result](evidence/local-first-decision-2026-10-10.json). |
+| Storage, embeddings, semantic retrieval, and suggestions | Live Cloudflare services | Passed on 2026-09-17. [Procedure and observations](#live-infrastructure). |
+| Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
+| Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
+| Complete Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Pending; not established by the local demo or tool discovery. |
+| Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
+
+Each record states its scope. A passing synthetic demonstration is not a live
+Tenable result, and successful authentication does not prove every tool works.
+
 ## Automated checks
 
-The offline suite contains 237 tests across 26 test files. It covers memory,
+The offline suite contains 238 tests across 26 test files. It covers memory,
 authentication, client isolation, browser review, the MCP interface, and search.
 Typechecking, Biome, CodeQL, and a full-history secret scan are separate checks.
 The repository's Actions badges link to their latest results.
@@ -25,6 +40,12 @@ npm test
 
 The test configuration disables remote bindings. Live verification is a separate,
 explicit command and requires the deployer's own account.
+
+On 2026-10-10, all 238 offline tests, typechecking, and lint passed in the
+reconciled onboarding checkout. The suite needs no Tenable credentials or live
+Tenable connection. Runtime configuration contains no Tenable API-key requirement;
+Tenable/Hexa is an optional source used by the connecting client. This verifies
+the core's independence from Tenable, not a completed live Hexa workflow.
 
 ## Live infrastructure
 

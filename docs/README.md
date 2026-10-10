@@ -7,6 +7,8 @@ these pages hold the operating instructions and supporting detail.
 
 | I want to… | Start here |
 |---|---|
+| Choose my first step and see one reviewed decision | [Start here](start-here.md) |
+| Understand the application, agent, and optional Tenable roles | [Applications and agents](applications-and-agents.md) |
 | Try the product on my own computer | [Local demo](local-demo.md) |
 | Explore the real review and administration screens | [Product tour](product-tour.md) |
 | Understand the evidence and review flow | [Reproducible walkthrough](walkthrough.md) |
@@ -16,9 +18,11 @@ these pages hold the operating instructions and supporting detail.
 | Understand isolation, storage, and retrieval | [Architecture](architecture.md) |
 | Assess the security boundaries and data flows | [Security model](security.md) |
 | See what has actually been verified | [Verification and limitations](verification.md) |
-| Review the planned Exchange submission | [Submission status](exchange/README.md) |
+| Review the Exchange listing and Hexa claim | [Listing status](exchange/README.md) |
+| Inspect the initial release scope | [v0.1.0 release notes](releases/v0.1.0.md) |
 | Contribute a change | [Contribution guide](../.github/CONTRIBUTING.md) |
 | Report a vulnerability privately | [Security policy](../.github/SECURITY.md) |
+| Get community help or discuss paid assistance | [Support options](../.github/SUPPORT.md) |
 | Use or extend the visual identity | [Brand kit](brand/README.md) |
 
 ## Source map

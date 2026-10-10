@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "scenario": "account-free local browser review",
+  "data": "bundled synthetic fixtures",
+  "identity": "local stand-in reviewer",
+  "driver": "automated browser clicking the actual Confirm control",
+  "tenable_account_required": false,
+  "cloudflare_account_required": false,
+  "live_tenable_data_used": false,
+  "review_before": {
+    "pending": 3,
+    "trusted": 1
+  },
+  "review_after": {
+    "pending": 2,
+    "trusted": 2
+  },
+  "audit_before": {
+    "intact": true,
+    "entries": 8
+  },
+  "audit_after": {
+    "intact": true,
+    "entries": 9
+  },
+  "single_click_review": true,
+  "browser_errors": [],
+  "limitations": [
+    "This exercises the local demo, not a live human identity provider.",
+    "This does not verify remote semantic search, an Origin integration, or the complete Hexa workflow."
+  ]
+}
