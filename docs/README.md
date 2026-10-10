@@ -7,6 +7,7 @@ these pages hold the operating instructions and supporting detail.
 
 | I want to… | Start here |
 |---|---|
+| Understand the application, agent, and optional Tenable roles | [Applications and agents](applications-and-agents.md) |
 | Try the product on my own computer | [Local demo](local-demo.md) |
 | Explore the real review and administration screens | [Product tour](product-tour.md) |
 | Understand the evidence and review flow | [Reproducible walkthrough](walkthrough.md) |

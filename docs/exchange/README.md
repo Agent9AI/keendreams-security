@@ -1,16 +1,19 @@
 # CyberAgents Exchange submission
 
-The KeenDreams Security Memory MCP-server listing was published on the
-[CyberAgents Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/)
-on September 17, 2026. This directory retains the source listing and the
-companion skill listing that has not yet been submitted.
+This directory holds the listing sources used in a fork of
+[`tenable/cyberagents-exchange`](https://github.com/tenable/cyberagents-exchange)
+for Exchange submissions. The path here mirrors the path there, so each file
+moves across unchanged.
 
-Current status as of October 8, 2026:
+The MCP-server listing was merged on 2026-09-28 in
+[Tenable PR #189](https://github.com/tenable/cyberagents-exchange/pull/189) and is
+[published on the Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/).
+The companion skill remains prepared separately:
 
 | File | Type | Status |
 |---|---|---|
-| `mcp-servers/keendreams-security-memory.md` | MCP server | Published as Contributed |
-| `skills/hexa-to-memory.md` | Skill | Prepared; not yet published |
+| `mcp-servers/keendreams-security-memory.md` | MCP server | Published |
+| `skills/hexa-to-memory.md` | Skill | Prepared; full live Hexa workflow pending |
 
 Both validate cleanly against Tenable's `validator.py`, re-downloaded and re-run
 on 2026-09-17.
@@ -44,8 +47,10 @@ Setting `cta: "T1"` is what renders the "Powered by Hexa AI" treatment and a
 interoperability, and the project's own design document requires it to be proven
 against a live Tenable One instance before it is set.
 
-That test has not been run. Until it is, the honest values are the ones in the
-file. Once the Hexa recipe has been exercised end to end against a real tenant,
+Live authentication, tool discovery, and one bounded Hexa read passed on
+2026-10-10. The complete finding-to-memory, review, and recall test is still
+pending; see the [verification record](../verification.md#live-tenable-hexa-check).
+Once the Hexa recipe has been exercised end to end against a real tenant,
 three lines change together:
 
 ```yaml
@@ -64,16 +69,15 @@ same pull request would fail validation today. Adding a vocabulary value is a
 separate change to Tenable's own repository and should not be bundled with a
 listing submission.
 
-## Still outstanding
+## Submission record
 
-- Run the documented `/hexa-to-memory` workflow against the Tenable One trial,
-  using one asset or one CVE and only the four allowlisted read tools.
-- Preserve the tool responses and memory review result as interoperability
-  evidence without recording credentials.
-- After that test passes, update the published MCP listing's Hexa fields as one
-  change and submit `skills/hexa-to-memory.md` as its own pull request.
-- Keep the current listing unchanged if any part of the live workflow remains
-  unverified.
+- `compatible_clients` claims Claude Code. The full OAuth and MCP path is proven
+  by the end to end test suite and a real Claude Code client completed sign-in
+  through the deployed Cloudflare Access button on 2026-09-22.
+- The owner accepted the Contribution Agreement on 2026-09-22, and posted the
+  requested acknowledgment on the upstream pull request before it merged.
+- Full Hexa interoperability remains a separate verification gate from Exchange
+  publication and successful MCP authentication.
 
 ## Verified since the listing was first written
 

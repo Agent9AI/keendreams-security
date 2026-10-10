@@ -14,17 +14,24 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-235d42" alt="MIT license"></a>
 </p>
 
-**Start the next investigation with the decisions your team already made.**
+**Give your security applications and agents a memory they can explain.**
 
-KeenDreams Security gives agents and analysts a shared record of findings,
-evidence, and review decisions. It runs as an open-source MCP server in **your
-own Cloudflare account**, with a separate memory for each client and a history
-behind each answer.
+KeenDreams Security is an **open-source security memory layer** for findings,
+evidence, and reviewed decisions. Semantic vector search and keyword search help
+retrieve what your team already knows; trust and validity checks determine which
+facts are eligible for default recall. Each fact stays connected to its evidence
+and history. Deploy it in **your own Cloudflare account** and connect through MCP.
+
+**No Tenable account or Tenable One license is required to use KeenDreams Security.**
+The optional Tenable Hexa workflow brings live exposure data into that memory,
+so current findings can be investigated alongside previous decisions.
+Cloudflare hosting and any chosen AI services have their own requirements and costs.
 
 [**Product tour**](#the-product-in-two-pages) &nbsp;·&nbsp;
 [Deploy](docs/deployment/README.md) &nbsp;·&nbsp;
 [Architecture](docs/architecture.md) &nbsp;·&nbsp;
 [Tool reference](docs/reference/mcp-tools.md) &nbsp;·&nbsp;
+[Tenable Hexa](docs/integrations/tenable.md) &nbsp;·&nbsp;
 [Documentation](docs/README.md)
 
 <a id="the-product-in-two-pages"></a>
@@ -112,6 +119,26 @@ provenance. [See the reproducible walkthrough](docs/walkthrough.md).
 
 [Explore the workflows](docs/walkthrough.md#practical-workflows).
 
+## Extend an application or an agent
+
+A security application can use KeenDreams to retrieve earlier findings and
+decisions during an investigation. An MCP-connected agent can record evidence,
+propose relationships, and recall reviewed knowledge in a later session. Both
+use the same memory tools and trust rules; neither gains authority to approve a
+finding simply by connecting.
+
+**Origin Observatory is the example security application for the planned
+integration walkthrough.** It has its own investigation tools and evidence
+records. The intended demonstration shows Origin displaying a Tenable finding,
+recording supporting evidence in KeenDreams, and retrieving a reviewed decision
+in a later investigation. Origin is a separate Agent9 project, not a dependency
+or part of this repository's runtime. Its connector belongs in a separate repo.
+
+That application walkthrough has not yet been completed or photographed as live
+integration proof. The product screenshots above show the existing KeenDreams
+local demo. An agent-focused walkthrough will be documented separately.
+[Application and agent integration model](docs/applications-and-agents.md).
+
 <a id="how-it-runs"></a>
 
 ## Your account. Your memory.
@@ -170,8 +197,23 @@ MCP client. [Follow the sign-in instructions](docs/deployment/README.md#sign-in-
 
 ### Using it with Tenable
 
-The included [`/hexa-to-memory` skill](SKILL.md) uses an explicit allowlist of
-Hexa read tools to compare findings with prior decisions and record proposals.
+**Tenable adds current exposure evidence; KeenDreams makes reviewed knowledge
+reusable across security applications and agents.** Through Hexa MCP, a connected
+client can retrieve scoped asset and vulnerability information, compare it with
+prior decisions, and record new evidence-backed proposals. Where returned by the
+selected Tenable tools, prioritization, affected-asset details, and remediation
+information can give the reviewer more context than a finding title alone.
+
+The included [`/hexa-to-memory` skill](SKILL.md) coordinates that workflow using
+approved read tools. Tenable access remains read-only; memory writes happen in
+KeenDreams. A decision recorded here does not create a Tenable risk-acceptance
+rule or change a scan result. Hexa requires an eligible Tenable One license,
+enabled MCP access, and an appropriately permitted API-key owner.
+
+The benefit to demonstrate is a later investigation that retrieves the earlier
+decision, its reason, and its evidence while comparing them with fresh findings.
+This complements Tenable's own history and decision features; it does not claim
+that Tenable lacks memory or replace Tenable as the source of its findings.
 [Integration guide](docs/integrations/tenable.md) ·
 [Exchange listing status](docs/exchange/README.md).
 
@@ -179,14 +221,17 @@ Hexa read tools to compare findings with prior decisions and record proposals.
 
 ## Built to be inspected
 
-**237 tests across 26 files**, plus typechecking, lint, CodeQL, and full-history
+**238 tests across 26 files**, plus typechecking, lint, CodeQL, and full-history
 secret scanning. The badges above open the actual workflow results.
 
 Live checks on September 17, 2026 verified Workers AI, Vectorize, hybrid recall,
 and model-generated proposals. They also found a production response-format bug
 that the offline stand-ins missed; the fix is covered by regression tests.
 
-> **Still to verify:** the Hexa recipe against a live Tenable One tenant.
+Live Hexa authentication, tool discovery, and a bounded asset query passed on
+October 10, 2026. [Read the results and their limits](docs/verification.md#live-tenable-hexa-check).
+
+> **Still to verify:** the complete Hexa finding-to-memory, review, and recall workflow.
 > Semantic indexing is asynchronous, and the audit log has no retention policy
 > yet. [Evidence, procedures, and all known limitations](docs/verification.md).
 

@@ -12,8 +12,11 @@ already decided, and leaves an audit trail a human confirms.
 
 Both MCP servers must be connected in this session.
 
-Check with `/mcp`. If **tenable-hexa** is missing, verify these Tenable-side
-prerequisites before doing anything else:
+Check with `/mcp`. The Tenable connection can be named **tenable-hexa** or
+**tenable**; identify it by its configured `https://cloud.tenable.com/mcp/`
+endpoint (with or without the trailing slash), not by its display name alone.
+Use the actual connection's tool prefix. If neither is connected, verify these
+Tenable-side prerequisites before querying any data:
 
 - Tenable One Foundation or Advanced is active.
 - Hexa AI MCP is enabled for the account.
@@ -41,7 +44,7 @@ can be shared safely in this form:
 ```
 
 Claude Code expands environment variables in HTTP MCP headers. If either
-variable is missing, configuration must fail closed. Re-run `/mcp` and stop if
+variable is missing, stop and have the user configure it locally. Re-run `/mcp` and stop if
 the server is not connected or returns an authentication error.
 
 If **keendreams-security** (this security-memory server) is missing:
@@ -54,13 +57,21 @@ Replace `<their-worker>` with the hostname of their deployed KeenDreams Security
 Worker. Confirm the connection points to the security-memory deployment before
 using it.
 
+Partner integrations should also send Tenable's documented User-Agent format:
+`Integration/1.0 (VENDOR; PRODUCT; Build/VERSION)`. Use the actual integration
+version. Keep credentials and private deployment addresses out of committed files.
+
+Discover the live Hexa tools before querying findings. On 2026-10-10, the checked
+server exposed 95 tools, including the three below; `asset_search` was absent.
+Tool availability and arguments can change. An unavailable tool is a coverage
+gap, not a reason to guess a replacement or broaden the query.
+
 ## Safety rules, in order of importance
 
 **1. Only call Hexa tools that read.** Hexa exposes read and write tools in the
 same server. Call only tools from this allowlist:
 
 - `tenable_one_search_assets`
-- `asset_search`
 - `workbenches_list_vulnerabilities`
 - `workbenches_list_assets_with_vulnerabilities`
 
@@ -95,6 +106,18 @@ window.
 ### 2. Pull the findings
 
 Use the allowlisted read tools for exactly that scope. Keep the raw response.
+
+Use only arguments present in each live tool schema, and apply a small result
+limit where supported. Save raw results privately; publish only sanitized test
+evidence. Preserve the requested filters, retrieval time, and any truncation or
+coverage limits. Do not interpret a tool's `age` filter as a particular detection
+timestamp unless its documented semantics establish that meaning.
+
+An asset summary containing vulnerability counts does not establish a specific
+asset-to-CVE or asset-to-plugin relationship. If the response lacks that mapping,
+stop before asserting `HAS_VULN`. Request approval for a scoped read tool that
+returns the missing evidence, following the allowlist rule above. Never pair an
+asset summary with an unrelated tenant-wide vulnerability list.
 
 ### 3. Ask memory what is already known
 

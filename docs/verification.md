@@ -8,7 +8,7 @@ not a certification or proof that every deployment works.
 
 ## Automated checks
 
-The offline suite contains 237 tests across 26 test files. It covers memory,
+The offline suite contains 238 tests across 26 test files. It covers memory,
 authentication, client isolation, browser review, the MCP interface, and search.
 Typechecking, Biome, CodeQL, and a full-history secret scan are separate checks.
 The repository's Actions badges link to their latest results.
@@ -25,6 +25,12 @@ npm test
 
 The test configuration disables remote bindings. Live verification is a separate,
 explicit command and requires the deployer's own account.
+
+On 2026-10-10, all 238 offline tests, typechecking, and lint passed in the
+reconciled onboarding checkout. The suite needs no Tenable credentials or live
+Tenable connection. Runtime configuration contains no Tenable API-key requirement;
+Tenable/Hexa is an optional source used by the connecting client. This verifies
+the core's independence from Tenable, not a completed live Hexa workflow.
 
 ## Live infrastructure
 
@@ -65,13 +71,36 @@ Code reported that the server was connected and its tools were available. The
 deployed review and administration routes were also verified against the same
 Access application and callback URL.
 
+## Live Tenable Hexa check
+
+On 2026-10-10, an authenticated MCP session against Tenable's hosted endpoint
+completed initialization and tool discovery. It reported `Tenable VM MCP`
+version `4.0.10`, protocol `2025-03-26`, and 95 tools without a further results page.
+An actual Claude Code session also reported both Tenable and KeenDreams Security
+connected; that session did not execute the agent-driven workflow.
+
+| Check | Result |
+|---|---|
+| Hexa authentication and `tools/list` | Passed |
+| `tenable_one_search_assets` | Discovered; not invoked in this check |
+| `workbenches_list_vulnerabilities` | Discovered; not invoked in this check |
+| `workbenches_list_assets_with_vulnerabilities` | Invoked with `severity: Critical`, `age: 30`, `limit: 1`; returned one asset summary without a tool error |
+| Previously documented `asset_search` | Not exposed by this server; removed from the skill's allowlist |
+| Asset-to-specific-vulnerability evidence, memory proposal, human review, and later recall | Pending |
+
+The live read returned an asset summary and vulnerability counts, not a specific
+asset-to-plugin or asset-to-CVE mapping. No such relationship was inferred and no
+Tenable write tool was called. This proves authenticated retrieval, not the full
+Hexa-to-memory workflow. Private tenant records and credentials are excluded from
+the [sanitized machine-readable evidence](evidence/hexa-2026-10-10.json).
+
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **The Tenable Hexa recipe has not been run against a live Tenable One tenant.** Its safety design, an explicit allowlist of read tools, is documented and reviewable, but the recipe itself is unverified in production.
+- **The complete Tenable Hexa-to-memory workflow remains unverified.** Live authentication, discovery, and one bounded read passed on 2026-10-10. Recording a specific finding, human review, and later recall still need a complete live run.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.
