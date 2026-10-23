@@ -145,6 +145,8 @@ The MCP-server listing was merged in
 [Tenable PR #189](https://github.com/tenable/cyberagents-exchange/pull/189) and is
 [published on the Exchange](https://exchange.tenable.com/mcp-servers/keendreams-security-memory/).
 The [submission directory](../exchange/README.md) contains the listing sources and
-the companion skill. The proposed listing update sets the Hexa interoperability
-flag based on the bounded live workflow. The Exchange changes only when Tenable
-merges that update; publication and interoperability testing are not certification.
+the companion skill. The listing update that sets the Hexa interoperability flag,
+based on the bounded live workflow, is in review as
+[Tenable PR #213](https://github.com/tenable/cyberagents-exchange/pull/213). The
+Exchange changes only when Tenable merges it; publication and interoperability
+testing are not certification.
