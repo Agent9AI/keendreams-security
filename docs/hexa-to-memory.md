@@ -109,8 +109,8 @@ Agent9, and no Agent9 account or service is involved.
 <p><sub>Illustration of the live sequence, using the times recorded in the audit log. Exclusion of the unconfirmed proposal from default lookups was verified live on 2026-10-10.</sub></p>
 
 1. **Read.** The skill pulls a narrow scope from Hexa using named read tools only.
-2. **Check.** For each asset and finding pair it looks up current decisions and
-   pending proposals in KeenDreams, and reports what it finds before proposing
+2. **Check.** For each asset and finding pair it looks up current decisions, expired
+   decisions and pending proposals in KeenDreams, and reports what it finds before proposing
    anything.
 3. **Record.** It stores the Hexa response once, quoted, as evidence. Credential-shaped
    strings are redacted on the way in.
@@ -129,13 +129,34 @@ Agent9, and no Agent9 account or service is involved.
   <source media="(prefers-color-scheme: dark) and (max-width: 600px)" srcset="images/hexa-to-memory/states-mobile-dark.svg">
   <source media="(max-width: 600px)" srcset="images/hexa-to-memory/states-mobile-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="images/hexa-to-memory/states-dark.svg">
-  <img src="images/hexa-to-memory/states-light.svg" width="1280" alt="Five triage states. New: no decision or pending proposal in the checked scope, not yet observed live. Pending review: a proposal exists, not a decision, live 2026-10-23. Known finding: a confirmed observation, not a fix or acceptance, live 2026-10-10. Prior triage decision: human-confirmed disposition with reviewer and expiry, live 2026-10-23. Needs reassessment: expired, conflicting, or too little evidence, not yet observed live.">
+  <img src="images/hexa-to-memory/states-light.svg" width="1280" alt="Five triage states. New: no decision or pending proposal in the checked scope, live 2026-10-23. Pending review: a proposal exists, not a decision, live 2026-10-23. Known finding: a confirmed observation, not a fix or acceptance, live 2026-10-10. Prior triage decision: human-confirmed disposition with reviewer and expiry, live 2026-10-23. Needs reassessment: expired, conflicting, or too little evidence, live 2026-10-23.">
 </picture>
 </p>
 
-Each state is labelled with where it has been demonstrated. Three have been reported
-in live sessions against a real Tenable tenant. The other two have not yet been
-observed live, and the figure says so rather than implying otherwise.
+Each state is labelled with where it has been demonstrated. All five have now been
+reported in live sessions against a real Tenable tenant.
+
+### An expired decision, tested live
+
+Expiry is easy to claim and easy to get wrong, so it was tested on purpose. On
+2026-10-23 the skill recorded two lab decisions on the same asset: a false positive
+on plugin 10114, and an accepted risk on plugin 366093 set to expire 27 minutes
+after it was confirmed. Both reasons say plainly that they are lab exercises.
+
+Before any decision existed, a read-only session reported both findings as **New**.
+After the acceptance expired, the first read-only session reported it as **New**
+again. That was wrong: it dropped the reviewer, the reason and the fact that a
+decision had ever existed. (The same session treated the false positive as needing
+reassessment because of its lab reason, a cautious reading the evidence records.) The server was behaving as designed, leaving an expired
+decision out of the default lookup, but the skill made no other lookup that would
+find it.
+
+The skill now makes a third exact lookup that also returns expired decisions, and
+reports one as **Needs reassessment** with its reviewer, reason and expiry. Rerun on
+the same pair, the fixed skill did exactly that, and reported the false positive as a
+**Prior triage decision**, noting its reason marks it as a test that should not hide
+the finding. No session wrote to Tenable.
+[Evidence for all four sessions](evidence/hexa-triage-states-2026-10-23.json)
 
 ## What it may call in Hexa
 
@@ -197,18 +218,19 @@ the skill's.
 | Triage decision recorded by the skill as a proposal with reason and expiry | Live, 2026-10-23 | [hexa-risk-acceptance-2026-10-23.json](evidence/hexa-risk-acceptance-2026-10-23.json) |
 | Fresh read-only session recognizes a confirmed accepted risk, with audit-matched reviewer and expiry | Live, 2026-10-23 | [hexa-risk-acceptance-2026-10-23.json](evidence/hexa-risk-acceptance-2026-10-23.json) |
 | Refusal of scanner text that instructs a scan launch | Synthetic fixture | [Verification record](verification.md#live-tenable-hexa-check) |
-| False-positive and remediation dispositions | Not yet run live | |
-| Needs reassessment after an acceptance expires | Not yet observed live; this one expires 2027-01-21 | |
+| New finding with no prior decision | Live, 2026-10-23 | [hexa-triage-states-2026-10-23.json](evidence/hexa-triage-states-2026-10-23.json) |
+| False-positive decision recorded, confirmed in browser and recalled | Live, 2026-10-23, labelled a lab exercise | [hexa-triage-states-2026-10-23.json](evidence/hexa-triage-states-2026-10-23.json) |
+| Needs reassessment after an acceptance expires | Live, 2026-10-23, after a skill fix found by this test | [hexa-triage-states-2026-10-23.json](evidence/hexa-triage-states-2026-10-23.json) |
+| Remediation dispositions | Not yet run live | |
 | Independent review (proposer and reviewer are different people) | Not yet demonstrated | |
 | Platforms other than Claude Code | Not tested | |
 
-All live checks ran against one authorized partner-lab tenant and one asset/plugin
-pair. They are maintainer-recorded evidence, not a Tenable certification or an
+All live checks ran against one authorized partner-lab tenant and one asset. They are maintainer-recorded evidence, not a Tenable certification or an
 independent audit. [Full verification record and limitations](verification.md).
 
 ## Questions a security reviewer asks
 
-**Does it ever write to Tenable?** No. In both live sessions on 2026-10-23 it made
+**Does it ever write to Tenable?** No. In all six live sessions on 2026-10-23 it made
 zero Tenable write calls, and it is instructed never to call the write tools named
 above.
 
@@ -227,9 +249,10 @@ your Cloudflare account, and Claude Code runs on your machine.
 
 **What happens when an acceptance expires?** The server stops returning it as a
 current decision, which an offline test covers ("stops returning an accepted risk after
-it expires"). The skill is instructed to report such a finding as needing
-reassessment rather than accepted. That sequence has not yet been observed live; the
-decision recorded on 2026-10-23 expires on 2027-01-21.
+it expires"). The skill then reports the finding as needing reassessment, with the
+expired decision's reviewer, reason and expiry. That was observed live on 2026-10-23,
+after the test exposed and fixed a gap
+([An expired decision, tested live](#an-expired-decision-tested-live)).
 
 [Skill instructions (`SKILL.md`)](../SKILL.md) ·
 [Integration guide](integrations/tenable.md) ·

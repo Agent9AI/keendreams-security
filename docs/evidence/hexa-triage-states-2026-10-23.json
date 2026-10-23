@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "verification_level": "live_triage_states_false_positive_and_expiry",
+  "tenable_server": {
+    "endpoint_documented_as": "Tenable Hexa AI MCP",
+    "source": "live MCP tool results"
+  },
+  "scope": "the same authorized partner-lab asset used in the earlier checks; plugins 10114 (Low) and 366093 (Critical)",
+  "findings": {
+    "10114": {
+      "plugin_name": "ICMP Timestamp Request Remote Date Disclosure",
+      "severity": "Low",
+      "present_in_live_asset_list": true
+    },
+    "366093": {
+      "plugin_name": "Microsoft .NET Framework (October 2026)",
+      "severity": "Critical",
+      "present_in_live_asset_list": true
+    }
+  },
+  "step_1_before_any_decision": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 0,
+    "duration_seconds": 24.2,
+    "skill_sha256": "5aadcbf2ce64a6a4518676bbe1f407d4c1bed5241d405c33331c2c90376447ef",
+    "note": "keendreams-security was still connecting when the session started; its 4 lookups then returned without error.",
+    "pairs": {
+      "10114": {
+        "reported_state": "New",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 0
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          }
+        ]
+      },
+      "366093": {
+        "reported_state": "New",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 0
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          }
+        ]
+      }
+    }
+  },
+  "step_2_record_decisions": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "keendreams-security",
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "record_episode",
+      "assert_fact",
+      "assert_fact"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 3,
+    "duration_seconds": 41.4,
+    "skill_sha256": "5aadcbf2ce64a6a4518676bbe1f407d4c1bed5241d405c33331c2c90376447ef",
+    "evidence_source": "tenable-hexa",
+    "evidence_redactions": 0,
+    "decisions": [
+      {
+        "predicate": "FALSE_POSITIVE",
+        "reason": "Lab exercise of the false-positive path for the KeenDreams live verification. Not a real determination about this finding.",
+        "valid_to": null,
+        "recorded_by_skill_as": "proposed",
+        "returned_label_before_review": "UNCONFIRMED"
+      },
+      {
+        "predicate": "ACCEPTED_RISK",
+        "reason": "Lab exercise of expiry handling for the KeenDreams live verification. Deliberately short expiry; revisit once it lapses.",
+        "valid_to": "2026-10-23T21:37:00.000Z",
+        "recorded_by_skill_as": "proposed",
+        "returned_label_before_review": "UNCONFIRMED"
+      }
+    ],
+    "decisions_are_lab_exercises": true
+  },
+  "step_3_human_review": {
+    "confirmed_in": "browser review page",
+    "false_positive_confirmed_at": "2026-10-23T21:09:45.777Z",
+    "accepted_risk_confirmed_at": "2026-10-23T21:09:47.700Z",
+    "accepted_risk_expired_at": "2026-10-23T21:37:00.000Z",
+    "proposer_and_reviewer_same_identity": true,
+    "reviewer_identity_published": false
+  },
+  "step_4_after_expiry_before_fix": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "keendreams-security",
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 0,
+    "duration_seconds": 24.3,
+    "skill_sha256": "5aadcbf2ce64a6a4518676bbe1f407d4c1bed5241d405c33331c2c90376447ef",
+    "told_about_decisions": false,
+    "pairs": {
+      "10114": {
+        "reported_state": "Needs reassessment",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 1
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          }
+        ]
+      },
+      "366093": {
+        "reported_state": "New",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 0
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          }
+        ]
+      }
+    },
+    "note": "Skill before the fix: the default lookup omits an expired decision, so the expired acceptance read as New."
+  },
+  "step_5_after_expiry_with_fix": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "keendreams-security",
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts",
+      "find_facts"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 0,
+    "duration_seconds": 29.8,
+    "skill_sha256": "d034663e0236cdeb86daa883035d620b80ed871252695cccdef066b280321e18",
+    "told_about_decisions": false,
+    "pairs": {
+      "10114": {
+        "reported_state": "Prior triage decision",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 1
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          },
+          {
+            "status": "trusted",
+            "count": 1
+          }
+        ]
+      },
+      "366093": {
+        "reported_state": "Needs reassessment",
+        "memory_lookups": [
+          {
+            "status": "current",
+            "count": 0
+          },
+          {
+            "status": "proposed",
+            "count": 0
+          },
+          {
+            "status": "trusted",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "gap_found_and_fixed": {
+    "symptom": "An expired ACCEPTED_RISK was reported as New, losing its reviewer, reason and expiry.",
+    "cause": "The default find_facts lookup (status current) omits a decision once valid_to passes, and the skill made no other lookup that would return it.",
+    "fix": "A third exact lookup with status trusted; an expired disposition is reported as Needs reassessment.",
+    "server_changed": false
+  },
+  "privacy": {
+    "asset_identifiers_included": false,
+    "memory_record_ids_included": false,
+    "reviewer_identity_included": false,
+    "credentials_included": false,
+    "private_deployment_addresses_included": false,
+    "raw_tenant_response_included": false
+  },
+  "limitations": [
+    "Maintainer-recorded evidence, not an independent certification.",
+    "Both decisions are labelled lab exercises in their recorded reasons; neither is a real determination about the finding.",
+    "The expiry was set minutes ahead on purpose; a 90-day expiry lapsing naturally was not observed.",
+    "The same identity proposed and confirmed both decisions; independent review was not demonstrated.",
+    "REMEDIATED dispositions were not run live.",
+    "Classifications are read from each session's triage table; model output can vary between runs."
+  ]
+}

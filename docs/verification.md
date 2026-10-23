@@ -18,6 +18,7 @@ not a certification or proof that every deployment works.
 | Specific Hexa finding recorded as an unconfirmed proposal | Live scoped reads and Claude Code memory calls | Passed on 2026-10-10. Exact evidence preserved; default recall excluded the proposal and inclusive recall returned it. [Workflow checkpoint](evidence/hexa-workflow-2026-10-10.json). |
 | Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Passed for one authorized asset/plugin finding on 2026-10-10. [Proof and limits](#live-tenable-hexa-check). |
 | Accepted-risk decision recorded by the skill, confirmed in the browser, and recognized by a fresh read-only session | Live `/hexa-to-memory` sessions in Claude Code | Passed for one accepted risk on 2026-10-23. [Proof and limits](#live-risk-acceptance-check) · [Sanitized evidence](evidence/hexa-risk-acceptance-2026-10-23.json). |
+| New, false-positive and expired-acceptance states | Live `/hexa-to-memory` sessions in Claude Code | Passed on 2026-10-23 after a skill fix this check exposed. [Proof and limits](#live-triage-states-and-expiry-check) · [Sanitized evidence](evidence/hexa-triage-states-2026-10-23.json). |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
 
 Each record states its scope. A passing synthetic demonstration is not a live
@@ -171,13 +172,40 @@ raw tenant responses. The transcript stream does not echo the expanded skill
 instructions, so verbatim use is indicated by the invocation, the loaded skill and
 the observed behavior, not by a recorded copy.
 
+## Live triage-states and expiry check
+
+On 2026-10-23, four further `/hexa-to-memory` sessions in Claude Code covered the
+states the risk-acceptance check left open, on the same partner-lab asset and two
+other plugins: 10114 (ICMP timestamp disclosure, Low) and 366093 (.NET Framework,
+Critical). Both decisions below are labelled lab exercises in their recorded reasons;
+neither is a real determination about the finding.
+
+| Step | Observed |
+|---|---|
+| Before any decision, read-only | Both pairs reported **New**; current and proposed lookups returned 0 facts each. |
+| Decisions recorded | `FALSE_POSITIVE` on 10114 (no expiry) and `ACCEPTED_RISK` on 366093 with `valid_to` 2026-10-23T21:37:00Z, citing one `tenable-hexa` evidence episode (0 redactions). Both returned `proposed` / `UNCONFIRMED`. |
+| Human review | Both confirmed in the browser at 21:09:45 and 21:09:47 UTC. |
+| After expiry, skill before the fix | The expired acceptance was reported **New**. The false positive was reported as needing reassessment, citing its lab reason. |
+| After expiry, fixed skill | The expired acceptance was reported **Needs reassessment** with its reviewer, reason and expiry; the false positive as a **Prior triage decision**, noting its reason marks it as a test. |
+| Writes | 0 Tenable writes in all four sessions; 3 memory writes (one episode, two proposals) in the recording session, 0 in the others. |
+
+**Gap found and fixed.** The default `find_facts` lookup omits a decision once its
+`valid_to` passes, as designed, and the skill made no other lookup, so an expired
+acceptance read as a finding nobody had ever decided. The skill now also queries the
+exact pair with `status: "trusted"`, which returns expired decisions, and reports one
+as needing reassessment. The server was not changed.
+
+The [sanitized evidence](evidence/hexa-triage-states-2026-10-23.json) is generated from the four session transcripts, records
+the skill version each session ran, and is checked for the same private values as
+the risk-acceptance record.
+
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read (2026-10-10). One accepted-risk decision on the same pair completed recording, browser confirmation and fresh recall (2026-10-23). Remediation, false-positive, expiry-driven reassessment, independent (two-person) review, and exhaustive tool coverage are not established.
+- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read (2026-10-10). One accepted-risk decision on the same pair completed recording, browser confirmation and fresh recall (2026-10-23). Lab-exercise false-positive and deliberately short-expiry decisions on the same asset were recalled as a prior decision and as needing reassessment (2026-10-23). Remediation dispositions, a long expiry lapsing naturally, independent (two-person) review, and exhaustive tool coverage are not established.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.

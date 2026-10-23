@@ -229,7 +229,10 @@ existing finding. [Inspect the proof and its limits](docs/verification.md#live-t
 **Live risk acceptance verified, October 23, 2026:** the skill recorded a person's
 accepted-risk decision with a reason and expiry, the person confirmed it in the
 browser, and a fresh read-only session reported it as a prior triage decision.
-[Proof and limits](docs/verification.md#live-risk-acceptance-check).
+[Proof and limits](docs/verification.md#live-risk-acceptance-check). The same day, live
+sessions also showed a new finding, a false-positive decision and an expired
+acceptance, and the expiry test exposed and fixed a gap in the skill.
+[What it found](docs/hexa-to-memory.md#an-expired-decision-tested-live).
 
 The broader benefit is a later investigation that retrieves an earlier
 decision, its reason, and its evidence while comparing them with fresh findings.

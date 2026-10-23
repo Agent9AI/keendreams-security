@@ -163,22 +163,30 @@ filter expired facts. Also query the exact pair with `status: "proposed"` to
 identify pending work before proposing it again. If a result reaches its limit,
 report incomplete coverage rather than concluding no other decisions exist.
 
-For a focused pair-level report, those two exact lookups are sufficient. Do not
+The default lookup leaves out a decision once its `valid_to` has passed, so an
+expired acceptance would otherwise look like no decision at all. Query the exact
+pair a third time with `status: "trusted"`. A disposition returned there whose
+`valid_to` is at or before now, and which the current lookup did not return, is
+an expired decision: report it as needing reassessment, with its reviewer, reason
+and expiry, never as new.
+
+For a focused pair-level report, those three exact lookups are sufficient. Do not
 add `get_entity` or `explore_graph` calls unless the person requested wider entity
 or relationship context. A tool denied by the session's permissions is a boundary:
 report the limitation and do not retry that tool with different arguments.
 
 Classify each pair by the returned evidence:
 
-- **New:** no current fact or matching pending proposal was found within the
-  checked scope and limits.
+- **New:** no current fact, expired decision, or matching pending proposal was
+  found within the checked scope and limits.
 - **Pending review:** a matching proposal exists; it is not a decision.
 - **Known finding:** a confirmed `HAS_VULN` exists. This confirms an observation,
   not remediation, acceptance, or a false positive.
 - **Prior triage decision:** a current human-confirmed disposition exists. Show
   its predicate, reviewer, time, reason, and expiry, preserving its actual scope.
-- **Needs reassessment:** fresh findings conflict with a prior remediation, the
-  decision expired, or evidence is insufficient to apply the old decision.
+- **Needs reassessment:** fresh findings conflict with a prior remediation, a
+  trusted decision for the pair has expired, or evidence is insufficient to apply
+  the old decision.
 
 Never automatically suppress a fresh finding because an earlier decision exists.
 Do not describe two incompatible dispositions as settled. Present the conflict
