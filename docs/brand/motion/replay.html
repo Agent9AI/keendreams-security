@@ -47,7 +47,7 @@ html,body{margin:0;background:var(--bg);overflow:hidden}
 </div>
 <script>
 const PROMPT = '> /hexa-to-memory  asset <i>&lt;lab asset&gt;</i>, plugin 344819, read-only';
-const PROMPT_LEN = PROMPT.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, 'x').length;
+const PROMPT_LEN = new DOMParser().parseFromString(PROMPT, 'text/html').body.textContent.length;  // visible characters
 const CALLS = [
   ['tenable', 'workbenches_get_asset_vulnerabilities', '344819 present, Critical', 'accent'],
   ['keendreams', 'find_facts  (current)', 'HAS_VULN + ACCEPTED_RISK, trusted', 'accent'],
