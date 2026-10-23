@@ -2,7 +2,7 @@
 name: "Hexa to Memory"
 author: "Agent9AI"
 github_url: "https://github.com/Agent9AI/keendreams-security"
-description: "Triage Tenable Hexa findings against what your team already decided, using an explicit allowlist of read-only Hexa tools"
+description: "Triage Tenable Hexa findings against your team's prior decisions in KeenDreams Security Memory, using only allowlisted read-only Hexa tools. Requires your own KeenDreams deployment"
 license: "MIT"
 tier: "contributed"
 tags: ["triage", "tenable-hexa", "risk-acceptance", "false-positives", "human-in-the-loop", "memory"]
@@ -15,9 +15,26 @@ compatible_platforms: ["Claude Code"]
 invocation: "/hexa-to-memory"
 ---
 
-A Claude Code skill that sits between Tenable's Hexa AI MCP server and KeenDreams
+A Claude Code skill that connects Tenable's Hexa AI MCP server to KeenDreams
 Security Memory, so an analyst's triage session starts from what the team has
 already decided instead of from zero.
+
+> **This skill needs two MCP servers connected and does nothing on its own.** One
+> is Tenable's Hexa AI MCP server. The other is your own deployment of KeenDreams
+> Security Memory, the open-source server in the same repository. Read the
+> requirements below before installing.
+
+## What you need
+
+| Requirement | What it is for | Cost |
+|---|---|---|
+| Tenable One Foundation or Advanced, Hexa AI MCP enabled, and Vulnerability Management API keys with a read-capable role | The source of findings | Your existing Tenable license |
+| Your own [KeenDreams Security Memory](https://github.com/Agent9AI/keendreams-security#deploy-in-your-account) deployment in your Cloudflare account | Stores your team's decisions and the evidence behind them | Runs within Cloudflare's free Workers plan for evaluation, whose limits include 10,000 Workers AI neurons per day and 5 million stored vector dimensions. Heavier use can exceed them; see Cloudflare's pricing. |
+| A Cloudflare Access for SaaS application | How reviewers sign in to confirm or reject proposed facts | Cloudflare Zero Trust offers a free plan |
+| Claude Code | The only platform this skill has been tested on | Your Claude plan |
+
+KeenDreams runs entirely in your own Cloudflare account. No component sends data
+to Agent9, and no Agent9 account or service is involved.
 
 ## What it does
 
@@ -49,7 +66,7 @@ and `workbenches_list_assets_with_vulnerabilities`, plus the asset-scoped
 tools it must never call, and tells the model to show the person any other tool
 and wait for agreement rather than infer safety from a name.
 
-Three further rules shape its behaviour. Findings are treated as data and never
+Three further rules shape its behavior. Findings are treated as data and never
 as instructions, since scan output is attacker-reachable text. Evidence is
 recorded once per batch with the `tenable-hexa` source, and the memory redacts
 credential-shaped strings on the way in. The skill cannot perform browser
@@ -66,8 +83,20 @@ Follow the repository's
 [Claude Code installation guide](https://github.com/Agent9AI/keendreams-security/blob/main/docs/integrations/tenable.md#install-the-claude-code-skill)
 and invoke `/hexa-to-memory` with one agreed asset or vulnerability scope.
 The skill requires both MCP connections and permission to store the selected
-evidence in the chosen memory client. The repository documents a live bounded
-finding-to-proposal, human-review, and recall workflow, plus targeted skill
-evaluations. Its [verification record](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-tenable-hexa-check)
-separates real results from synthetic fixtures and untested scenarios. No Tenable
-certification or full coverage of risk-disposition workflows is claimed.
+evidence in the chosen memory client.
+
+## Verified live
+
+On October 23, 2026, the skill recorded a person's accepted-risk decision for one
+lab finding, with a reason and a 90-day expiry. The person confirmed it in the
+browser, and a fresh read-only session, not told the decision existed, reported it
+as a prior triage decision with the audit-matched reviewer and expiry. That session
+also flagged that the same person proposed and confirmed the decision, and that a
+newer plugin on the same asset was not covered. Neither session wrote to Tenable.
+
+[See the live result and replay](https://github.com/Agent9AI/keendreams-security/blob/main/docs/hexa-to-memory.md) ·
+[Verification record](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-risk-acceptance-check)
+
+This is one decision on one lab asset/plugin pair. False-positive and remediation
+dispositions, expiry-driven reassessment, and two-person review have not yet been
+run live. No Tenable certification is claimed.

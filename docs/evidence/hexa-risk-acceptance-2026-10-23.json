@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "verification_level": "live_risk_acceptance_review_and_recall",
+  "full_workflow_verified": true,
+  "tenable_server": {
+    "endpoint_documented_as": "Tenable Hexa AI MCP",
+    "source": "live MCP tool results"
+  },
+  "scope": "the same authorized partner-lab asset and plugin used in the 2026-10-10 check",
+  "skill": {
+    "sha256": "5aadcbf2ce64a6a4518676bbe1f407d4c1bed5241d405c33331c2c90376447ef",
+    "same_as_2026_10_10_check": true,
+    "install_method": "git clone into ~/.claude/skills/hexa-to-memory, as documented",
+    "instructions_echoed_in_transcript": false
+  },
+  "finding": {
+    "plugin_id": 344819,
+    "plugin_name": "Microsoft .NET Framework (September 2026)",
+    "severity": "Critical",
+    "present_in_live_asset_list": true
+  },
+  "decision": {
+    "predicate": "ACCEPTED_RISK",
+    "reason": "Partner-lab evaluation asset, not production. Risk accepted for the KeenDreams live risk-acceptance check; revisit at expiry.",
+    "valid_to": "2027-01-21T00:00:00.000Z",
+    "recorded_by_skill_as": "proposed",
+    "returned_label_before_review": "UNCONFIRMED",
+    "evidence_source": "tenable-hexa",
+    "evidence_redactions": 0,
+    "evidence_flags": []
+  },
+  "human_review": {
+    "status": "passed",
+    "proposed_at": "2026-10-23T19:00:09.603Z",
+    "confirmed_at": "2026-10-23T19:01:38.607Z",
+    "seconds_between": 89,
+    "confirmed_in": "browser review page",
+    "confirmation_matches_fact_fields": true,
+    "proposer_and_reviewer_same_identity": true,
+    "reviewer_identity_published": false
+  },
+  "session_a_record_decision": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "keendreams-security",
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "record_episode",
+      "assert_fact"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 2,
+    "duration_seconds": 31.7
+  },
+  "session_b_fresh_triage": {
+    "invocation": "/hexa-to-memory",
+    "skill_loaded": true,
+    "claude_code_version": "2.1.309",
+    "mcp_connected": [
+      "keendreams-security",
+      "tenable"
+    ],
+    "tenable_tool_calls": [
+      "workbenches_get_asset_vulnerabilities",
+      "workbenches_get_asset_vulnerability_details"
+    ],
+    "memory_tool_calls": [
+      "find_facts",
+      "find_facts",
+      "fact_history"
+    ],
+    "tool_errors": 0,
+    "tenable_write_tool_calls": 0,
+    "memory_writes": 0,
+    "duration_seconds": 34.2,
+    "told_about_decision": false,
+    "reported_classification": "Prior triage decision",
+    "returned_status": "trusted",
+    "returned_label": "TRUSTED",
+    "current_facts_for_pair": 2,
+    "flagged_self_approval": true,
+    "flagged_uncovered_newer_plugin": true
+  },
+  "privacy": {
+    "asset_identifiers_included": false,
+    "memory_record_ids_included": false,
+    "reviewer_identity_included": false,
+    "credentials_included": false,
+    "private_deployment_addresses_included": false,
+    "raw_tenant_response_included": false
+  },
+  "limitations": [
+    "Maintainer-recorded evidence, not an independent certification.",
+    "One accepted-risk decision on one lab asset/plugin pair; false-positive and remediation dispositions were not run live.",
+    "The same identity proposed and confirmed the decision; this demonstrates the review gate, not independent review.",
+    "Sessions were started with /hexa-to-memory and the installed skill was loaded; the transcript does not echo the expanded instructions.",
+    "Expiry behaviour (Needs reassessment after valid_to) was not observed live; the decision expires 2027-01-21.",
+    "Hexa returned N/A for the plugin detail name and first/last-seen dates; the name comes from the asset vulnerability list."
+  ]
+}

@@ -215,7 +215,8 @@ selected Tenable tools, prioritization, affected-asset details, and remediation
 information can give the reviewer more context than a finding title alone.
 
 The included [`/hexa-to-memory` skill](SKILL.md) coordinates that workflow using
-approved read tools. Tenable access remains read-only; memory writes happen in
+approved read tools. [**See Hexa to Memory in action**](docs/hexa-to-memory.md): a
+live session that recognized a confirmed accepted risk, with its reviewer and expiry. Tenable access remains read-only; memory writes happen in
 KeenDreams. A decision recorded here does not create a Tenable risk-acceptance
 rule or change a scan result. Hexa requires an eligible Tenable One license,
 enabled MCP access, and an appropriately permitted API-key owner.
@@ -224,6 +225,11 @@ enabled MCP access, and an appropriately permitted API-key owner.
 was recorded as an unconfirmed proposal, confirmed by a person in the browser,
 and recalled with the same evidence and reviewer. A later read recognized the
 existing finding. [Inspect the proof and its limits](docs/verification.md#live-tenable-hexa-check).
+
+**Live risk acceptance verified, October 23, 2026:** the skill recorded a person's
+accepted-risk decision with a reason and expiry, the person confirmed it in the
+browser, and a fresh read-only session reported it as a prior triage decision.
+[Proof and limits](docs/verification.md#live-risk-acceptance-check).
 
 The broader benefit is a later investigation that retrieves an earlier
 decision, its reason, and its evidence while comparing them with fresh findings.

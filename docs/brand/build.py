@@ -5,6 +5,7 @@ Run: python3 -m pip install -r docs/brand/requirements.txt
 """
 from drawing import Canvas, PALETTES, frame, mark
 from diagrams import architecture, trust_path
+import hexa
 
 
 def evidence_record(c, x, y, scale=1):
@@ -107,3 +108,4 @@ if __name__ == '__main__':
         trust_path(theme)
         architecture(theme)
     identity()
+    hexa.build()
