@@ -12,11 +12,11 @@ The companion skill remains prepared separately:
 
 | File | Type | Status |
 |---|---|---|
-| `mcp-servers/keendreams-security-memory.md` | MCP server | Published; Hexa verification update prepared for upstream review |
+| `mcp-servers/keendreams-security-memory.md` | MCP server | Published; Hexa listing update in review as [Tenable PR #213](https://github.com/tenable/cyberagents-exchange/pull/213) |
 | `skills/hexa-to-memory.md` | Skill | Prepared separately with bounded live and synthetic evidence |
 
 Both validate against Tenable's `validator.py` at Exchange commit
-`de2b758e89af4763b7028a5de70322013c6ba30b`, checked on 2026-10-10.
+`4078966b80c7c80a5913158dfda5fca90251fd19`, checked on 2026-10-23.
 This is metadata validation, not an interoperability or security certification.
 
 ## How the listing was checked
