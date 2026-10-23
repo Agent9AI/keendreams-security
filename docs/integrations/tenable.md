@@ -75,7 +75,7 @@ vendor, product, and version, as described in
 
 > **Note:** Hexa includes tools that write as well as tools that read. Documented write tools include `scan_create`, `scan_launch`, `ticket_create_issue` and `ticket_notify_assignees`. Anything that reads from Hexa on your behalf should name the specific read tools it may call rather than letting a model choose.
 
-This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code that does exactly that: it allowlists five Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves ordinary new facts as proposals for review. The two asset-scoped tools provide the specific asset/plugin evidence needed for an assertion. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
+This repository ships [`SKILL.md`](../../SKILL.md), a `/hexa-to-memory` skill for Claude Code ([see it working on live data](../hexa-to-memory.md)) that does exactly that: it allowlists five Hexa read tools by name, refuses Tenable writes, checks each finding against what your team already decided, and leaves ordinary new facts as proposals for review. The two asset-scoped tools provide the specific asset/plugin evidence needed for an assertion. The live server did not expose the previously documented `asset_search`; use discovery rather than assuming it exists.
 
 Follow the [skill installation instructions](#install-the-claude-code-skill) below.
 A confirmed finding and a triage disposition are different:

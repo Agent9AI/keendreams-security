@@ -10,13 +10,14 @@ not a certification or proof that every deployment works.
 
 | Capability | Evidence type | Result and record |
 |---|---|---|
-| Core memory, trust, isolation, and authentication behavior | Automated offline tests | 238 tests across 26 files passed on 2026-10-10; Cloudflare services are simulated in this suite. |
+| Core memory, trust, isolation, and authentication behavior | Automated offline tests | 249 tests across 26 files passed on 2026-10-23; Cloudflare services are simulated in this suite. |
 | First browser review without vendor accounts | Running local app with synthetic fixtures | One click changed pending/confirmed counts from 3/1 to 2/2; audit entries increased from 8 to 9 and remained intact. [Screenshots](start-here.md#1-see-the-review-workflow-without-any-accounts) · [Recorded result](evidence/local-first-decision-2026-10-10.json). |
 | Storage, embeddings, semantic retrieval, and suggestions | Live Cloudflare services | Passed on 2026-09-17. [Procedure and observations](#live-infrastructure). |
 | Claude Code authentication | Live deployed OAuth connection | Passed on 2026-09-22. [Sign-in record](#live-browser-sign-in). |
 | Hexa authentication, discovery, and scoped asset retrieval | Live Tenable MCP requests | Passed on 2026-10-10. [Sanitized evidence](evidence/hexa-2026-10-10.json). |
 | Specific Hexa finding recorded as an unconfirmed proposal | Live scoped reads and Claude Code memory calls | Passed on 2026-10-10. Exact evidence preserved; default recall excluded the proposal and inclusive recall returned it. [Workflow checkpoint](evidence/hexa-workflow-2026-10-10.json). |
 | Hexa finding-to-memory, human-review, and later-recall workflow | Live cross-system evaluation | Passed for one authorized asset/plugin finding on 2026-10-10. [Proof and limits](#live-tenable-hexa-check). |
+| Accepted-risk decision recorded by the skill, confirmed in the browser, and recognized by a fresh read-only session | Live `/hexa-to-memory` sessions in Claude Code | Passed for one accepted risk on 2026-10-23. [Proof and limits](#live-risk-acceptance-check) · [Sanitized evidence](evidence/hexa-risk-acceptance-2026-10-23.json). |
 | Origin Observatory integration demonstration | Separate example application | Pending; no live integration screenshot is claimed. |
 
 Each record states its scope. A passing synthetic demonstration is not a live
@@ -141,13 +142,42 @@ disposition, pending proposal or new write. A separate synthetic fixture checked
 pending-proposal reuse and rejection of scanner text instructing a scan launch.
 These are targeted evaluations, not exhaustive skill or prompt-injection coverage.
 
+## Live risk-acceptance check
+
+On 2026-10-23 the risk-disposition path ran live, using the same lab asset and
+plugin 344819 as the check above. Both sessions were Claude Code (2.1.309) started
+with `/hexa-to-memory`, with the installed skill loaded (SHA-256 `5aadcbf2...`,
+unchanged since 2026-10-10) and both MCP servers connected. Each session was limited
+to the skill's asset-scoped Hexa read tools and the memory tools it needed.
+
+| Step | Observed |
+|---|---|
+| Live Hexa re-read | Plugin 344819 still present on the asset, Critical. |
+| Pre-write memory check | One confirmed `HAS_VULN` fact; no prior disposition; no pending proposal for the pair. |
+| Decision recorded | The person's `ACCEPTED_RISK` decision, with reason and a `valid_to` of 2027-01-21, cited a new `tenable-hexa` evidence episode (0 redactions, 0 flags) and returned `proposed` / `UNCONFIRMED`. |
+| Human review | Confirmed in the browser 89 seconds later; the fact's reviewer and time match the `fact.confirm` audit entry. |
+| Fresh triage, read-only | Not told about the decision and given no write tools. Reported **Prior triage decision** with reviewer, reason and expiry, and showed the fact's audit history. |
+| Writes | 0 Tenable writes in either session; 2 memory writes in the recording session (episode and proposal), 0 in the triage session. |
+
+The triage session also raised two points unprompted: the same identity proposed
+and confirmed the decision, which is a valid confirmation but not independent
+review; and a newer Critical plugin, 366093, on the same asset is not covered by
+the acceptance.
+
+The [sanitized evidence](evidence/hexa-risk-acceptance-2026-10-23.json) is generated
+from the two session transcripts and checked for private values. It omits the asset
+identifier, memory record IDs, reviewer address, deployment address, credentials and
+raw tenant responses. The transcript stream does not echo the expanded skill
+instructions, so verbatim use is indicated by the invocation, the loaded skill and
+the observed behavior, not by a recorded copy.
+
 ## Known limitations
 
 Stated plainly, because a security tool that oversells itself is worse than useless.
 
 - **New evidence takes one to two minutes to become searchable by meaning.** Vectorize indexes asynchronously; in the live verification a new vector became queryable after 69 and 121 seconds on two runs. Keyword search sees it immediately, and `recall` uses both, so a fresh finding is still found by its words straight away.
 - **The alternate PIN identity-provider route was not used in the live check.** The verified path is the Cloudflare OAuth button through the configured Access for SaaS application.
-- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read. Risk-acceptance, remediation, false-positive, and exhaustive tool coverage are not established by that run.
+- **Hexa verification is bounded.** One asset/plugin finding completed source retrieval, proposal exclusion, human browser confirmation, default recall/history, and a repeat source read (2026-10-10). One accepted-risk decision on the same pair completed recording, browser confirmation and fresh recall (2026-10-23). Remediation, false-positive, expiry-driven reassessment, independent (two-person) review, and exhaustive tool coverage are not established.
 - **`suggest_facts` depends on a model returning schema-valid JSON.** The default model does, verified live. If you choose another and it is unreliable, set `SUGGEST_MODEL=off`, and the admin page will tell you. Suggestions are a convenience, not a dependency.
 - **The audit log grows without bound.** There is no retention policy yet.
 - **Multi-client mode requires deliberate setup.** Single-client mode is the default and is what most teams want.

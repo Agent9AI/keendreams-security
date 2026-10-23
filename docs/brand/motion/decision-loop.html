@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Illustration of the live 2026-10-23 sequence: a Hexa finding becomes an UNCONFIRMED proposal that
+     default lookups exclude (verified live 2026-10-10); a person confirms it in the browser; a later session recalls it as a
+     trusted decision. Times shown are the recorded audit times. Pure function of t (render(t)). -->
+<style>
+@font-face{font-family:Manrope;src:url(../fonts/manrope-latin.woff2) format('woff2');font-weight:200 800}
+@font-face{font-family:Plex;src:url(../fonts/ibm-plex-mono-latin.woff2) format('woff2')}
+:root{--bg:#081713;--ink:#EDF5EE;--muted:#A4BDAF;--accent:#B8E7CA;--amber:#EABB72;--line:#315044;--panel:#10251D;--soft:#1A382A}
+html,body{margin:0;background:var(--bg);overflow:hidden}
+#s{position:relative;width:960px;height:420px;font-family:Manrope;color:var(--ink);background:var(--bg)}
+.top{position:absolute;left:32px;right:32px;top:22px;display:flex;justify-content:space-between;font:13px Plex;letter-spacing:.9px;color:var(--muted)}
+.top b{color:var(--accent);font-weight:400}
+.stage{position:absolute;top:96px;width:196px;height:150px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);box-sizing:border-box;padding:16px 16px}
+.stage .k{font:11px Plex;letter-spacing:1px;color:var(--muted)}
+.stage .v{font:700 19px Manrope;margin-top:10px;line-height:1.15}
+.stage .d{font:12.5px Plex;color:var(--muted);margin-top:10px;line-height:1.45}
+.chip{font:12px Plex;letter-spacing:.5px;margin-top:8px}
+.link{position:absolute;top:170px;height:2px;background:var(--line)}
+.pulse{position:absolute;width:14px;height:14px;border-radius:50%;top:164px;margin-left:-7px}
+.probe{position:absolute;left:32px;right:32px;top:282px;height:46px;border-radius:8px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;font:15px Plex;padding:0 18px;box-sizing:border-box}
+.probe span{margin-left:auto}
+.foot{position:absolute;left:32px;right:32px;top:350px;font:15px Manrope;color:var(--muted)}
+.foot b{color:var(--ink);font-weight:700}
+.legal{position:absolute;left:32px;right:32px;bottom:16px;font:12px Plex;color:var(--muted)}
+</style></head><body>
+<div id="s">
+  <div class="top"><span><b>THE DECISION LOOP</b> / ILLUSTRATION OF THE LIVE 2026-10-23 SEQUENCE</span><span>TIMES FROM THE AUDIT LOG</span></div>
+  <div class="stage" id="st0" style="left:32px"><div class="k">HEXA, READ-ONLY</div><div class="v">Finding still present</div><div class="d">Plugin 344819<br>Critical</div></div>
+  <div class="stage" id="st1" style="left:263px"><div class="k">SKILL PROPOSES</div><div class="v">ACCEPTED_RISK</div><div class="chip" id="c1" style="color:var(--amber)">[ UNCONFIRMED ]</div><div class="d">19:00:09 UTC</div></div>
+  <div class="stage" id="st2" style="left:494px"><div class="k">PERSON, IN A BROWSER</div><div class="v">Confirm</div><div class="d">Signed-in review<br>19:01:38 UTC</div></div>
+  <div class="stage" id="st3" style="left:725px"><div class="k">LATER SESSION</div><div class="v">Prior triage decision</div><div class="chip" style="color:var(--accent)">[ TRUSTED ]</div><div class="d">Expires 2027-01-21</div></div>
+  <div class="link" style="left:228px;width:35px"></div><div class="link" style="left:459px;width:35px"></div><div class="link" style="left:690px;width:35px"></div>
+  <div class="pulse" id="pulse"></div>
+  <div class="probe" id="probe">default memory lookup <span id="probeval"></span></div>
+  <div class="foot" id="foot"><b>The skill cannot confirm anything.</b> Until a person does, default lookups leave the proposal out.</div>
+  <div class="legal">Evidence: docs/evidence/hexa-risk-acceptance-2026-10-23.json</div>
+</div>
+<script>
+const DUR = 14;
+const clamp = (x) => Math.min(1, Math.max(0, x));
+const ease = (u) => 1 - Math.pow(1 - u, 3);
+const prog = (t, a, b) => ease(clamp((t - a) / (b - a)));
+const CX = [130, 361, 592, 823];
+// stage i lights at LIT[i]; the pulse travels between stage centres
+const LIT = [0.8, 2.8, 6.4, 9.0];
+const MOVES = [[1.6, 2.6, 0, 1], [5.2, 6.2, 1, 2], [7.8, 8.8, 2, 3]];
+window.SCENE = { w: 960, h: 420, dur: DUR };
+window.render = (t) => {
+  const s = document.getElementById('s');
+  s.style.opacity = Math.min(prog(t, 0, .5), 1 - prog(t, DUR - .8, DUR - .05));
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('st' + i), u = prog(t, LIT[i], LIT[i] + .5);
+    el.style.opacity = .28 + .72 * u;
+    const trusted = i === 3 || (i >= 1 && t > 6.6);
+    el.style.borderColor = u < .5 ? 'var(--line)' : (i === 1 && t < 6.6 ? 'var(--amber)' : (trusted || i === 0 ? 'var(--accent)' : 'var(--line)'));
+    el.style.background = i === 3 && u > .5 ? 'var(--soft)' : 'var(--panel)';
+  }
+  const c1 = document.getElementById('c1');
+  const confirmed = t >= 6.6;
+  c1.textContent = confirmed ? '[ TRUSTED ]' : '[ UNCONFIRMED ]';
+  c1.style.color = confirmed ? 'var(--accent)' : 'var(--amber)';
+  const pulse = document.getElementById('pulse');
+  let x = CX[0], color = 'var(--accent)', vis = 0;
+  for (const [a, b, from, to] of MOVES) {
+    if (t >= a && t <= b + .3) { x = CX[from] + (CX[to] - CX[from]) * prog(t, a, b); vis = 1 - prog(t, b, b + .3); color = from === 0 ? 'var(--amber)' : 'var(--accent)'; }
+  }
+  pulse.style.left = x + 'px'; pulse.style.background = color; pulse.style.opacity = vis;
+  pulse.style.boxShadow = `0 0 16px ${color === 'var(--amber)' ? 'rgba(234,187,114,.7)' : 'rgba(184,231,202,.7)'}`;
+  const probe = document.getElementById('probe'), val = document.getElementById('probeval');
+  const before = t > 3.2 && t < 6.6, after = t >= 9.3;
+  probe.style.opacity = (before || after) ? 1 : .35;
+  val.textContent = before ? 'proposal excluded (verified live 2026-10-10)' : after ? 'returns the decision, reviewer and evidence (2026-10-23)' : '';
+  val.style.color = before ? 'var(--amber)' : 'var(--accent)';
+  probe.style.borderColor = before ? 'var(--amber)' : after ? 'var(--accent)' : 'var(--line)';
+  document.getElementById('foot').innerHTML = t < 9.3
+    ? '<b>The skill cannot confirm anything.</b> Until a person does, default lookups leave the proposal out.'
+    : '<b>Confirmed by a person, recalled by the next session.</b> The finding stays visible, marked as accepted.';
+};
+document.fonts.ready.then(() => { render(0); window.READY = true; });
+</script>
+</body></html>

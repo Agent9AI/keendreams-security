@@ -13,6 +13,7 @@ these pages hold the operating instructions and supporting detail.
 | Explore the real review and administration screens | [Product tour](product-tour.md) |
 | Understand the evidence and review flow | [Reproducible walkthrough](walkthrough.md) |
 | Deploy into my Cloudflare account | [Deployment and sign-in](deployment/README.md) |
+| See the Tenable triage skill working on live data | [Hexa to Memory](hexa-to-memory.md) |
 | Connect Tenable Hexa | [Integration guide](integrations/tenable.md) |
 | Build a client or inspect the tool contract | [MCP tool reference](reference/mcp-tools.md) |
 | Understand isolation, storage, and retrieval | [Architecture](architecture.md) |

@@ -67,6 +67,8 @@ assets are static, and the recorded demo animation is inside an optional disclos
 | Trust states | [`trust-path-light.svg`](trust-path-light.svg), [`trust-path-dark.svg`](trust-path-dark.svg) | Default proposal-to-recall flow; separate mobile exports |
 | Architecture | [`architecture-light.svg`](architecture-light.svg), [`architecture-dark.svg`](architecture-dark.svg) | Account and storage boundaries; separate mobile exports |
 | Social preview | [`social-preview.svg`](social-preview.svg), [`social-preview.png`](social-preview.png) | 1280 × 640 repository preview artwork |
+| Hexa to Memory page | [`../images/hexa-to-memory/`](../images/hexa-to-memory/) | Cover, badges, live result, requirements, triage states and tool boundary, each with light, dark and mobile exports where the page needs them |
+| Motion | [`motion/`](motion/) | Deterministic HTML scenes captured to GIF: the live-session replay and the decision loop |
 
 The social preview PNG is prepared for GitHub's repository **Settings → Social
 preview** field. Committing it does not set that field automatically.
@@ -82,6 +84,16 @@ python3 -m venv /tmp/keendreams-brand-env
 - [`drawing.py`](drawing.py) owns typography, colors, geometry primitives, and the mark.
 - [`build.py`](build.py) composes covers, identity, and social artwork.
 - [`diagrams.py`](diagrams.py) draws the implemented trust and deployment model.
+- [`hexa.py`](hexa.py) draws the Hexa to Memory page. Values shown as live come from
+  the sanitized evidence records in [`../evidence/`](../evidence/).
+
+The two animations are HTML scenes in which every frame is a function of time, so a
+capture is repeatable. Rebuild them with Playwright, Pillow and gifsicle:
+
+```bash
+python3 docs/brand/motion/capture.py replay docs/images/hexa-to-memory/replay.gif --poster 16
+python3 docs/brand/motion/capture.py decision-loop docs/images/hexa-to-memory/decision-loop.gif --poster 11
+```
 
 Export `social-preview.svg` at 1280 × 640 when refreshing its PNG. Preserve the
 outlined text and the source aspect ratio.
