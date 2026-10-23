@@ -297,11 +297,11 @@ def requirements_mobile(theme):
 # ---------------------------------------------------------------- triage states
 
 STATES = [
-    ('NEW', 'line', 'No decision or pending proposal in the checked scope.', 'Not yet observed live'),
+    ('NEW', 'line', 'No decision or pending proposal in the checked scope.', 'Live 2026-10-23'),
     ('PENDING REVIEW', 'amber', 'A proposal exists. It is not a decision.', 'Live 2026-10-23'),
     ('KNOWN FINDING', 'muted', 'A confirmed observation. Not a fix, not an acceptance.', 'Live 2026-10-10'),
     ('PRIOR TRIAGE DECISION', 'accent', 'Human-confirmed disposition, with reviewer and expiry.', 'Live 2026-10-23'),
-    ('NEEDS REASSESSMENT', 'amber', 'Expired, conflicting, or too little evidence to apply.', 'Not yet observed live'),
+    ('NEEDS REASSESSMENT', 'amber', 'Expired, conflicting, or too little evidence to apply.', 'Live 2026-10-23'),
 ]
 
 

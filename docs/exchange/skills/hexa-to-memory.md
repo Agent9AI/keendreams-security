@@ -2,11 +2,11 @@
 name: "Hexa to Memory"
 author: "Agent9AI"
 github_url: "https://github.com/Agent9AI/keendreams-security"
-description: "Triage Tenable Hexa findings against your team's prior decisions in KeenDreams Security Memory, using only allowlisted read-only Hexa tools. Requires your own KeenDreams deployment"
+description: "Triage Tenable Hexa findings against your team's prior decisions in KeenDreams Security Memory, using only allowlisted read-only Hexa tools. Requires your own KeenDreams deployment."
 license: "MIT"
 tier: "contributed"
 tags: ["triage", "tenable-hexa", "risk-acceptance", "false-positives", "human-in-the-loop", "memory"]
-domains: ["vulnerability-management", "ai-security"]
+domains: ["security-operations", "vulnerability-management"]
 integrations: ["Tenable", "Tenable Hexa AI MCP"]
 date_added: 2026-10-10
 contribution_agreement_date: 2026-09-22T16:37:44Z
@@ -92,11 +92,18 @@ lab finding, with a reason and a 90-day expiry. The person confirmed it in the
 browser, and a fresh read-only session, not told the decision existed, reported it
 as a prior triage decision with the audit-matched reviewer and expiry. That session
 also flagged that the same person proposed and confirmed the decision, and that a
-newer plugin on the same asset was not covered. Neither session wrote to Tenable.
+newer plugin on the same asset was not covered.
+
+The same day, further sessions on the same asset showed the remaining states: two
+findings reported as new before any decision; a false-positive decision recalled as
+a prior triage decision; and an acceptance with a deliberately short expiry reported
+as needing reassessment once it lapsed. That expiry test first showed the expired
+acceptance being reported as new, which led to a fix in the skill before this
+listing was submitted. No session wrote to Tenable.
 
 [See the live result and replay](https://github.com/Agent9AI/keendreams-security/blob/main/docs/hexa-to-memory.md) ·
-[Verification record](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-risk-acceptance-check)
+[Verification record](https://github.com/Agent9AI/keendreams-security/blob/main/docs/verification.md#live-triage-states-and-expiry-check)
 
-This is one decision on one lab asset/plugin pair. False-positive and remediation
-dispositions, expiry-driven reassessment, and two-person review have not yet been
-run live. No Tenable certification is claimed.
+All checks ran on one lab asset, and the false-positive and short-expiry decisions
+are labelled lab exercises. Remediation dispositions and two-person review have not
+yet been run live. No Tenable certification is claimed.
