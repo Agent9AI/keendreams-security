@@ -22,7 +22,8 @@
   "overrides": {
     "vite": "7.3.7",
     "source-map-js": "1.2.2",
-    "zod": "$zod"
+    "zod": "$zod",
+    "undici": "7.30.1"
   },
   "cloudflare": {
     "bindings": {
