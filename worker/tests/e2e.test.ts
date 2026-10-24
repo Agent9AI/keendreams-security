@@ -23,7 +23,7 @@ afterEach(async () => {
 
 /** Walks the real OAuth flow, standing in for the Access hop, and returns a bearer token. */
 async function signIn(): Promise<string> {
-  const api = getOAuthApi(oauthOptions as never, env);
+  const api = getOAuthApi(oauthOptions(ORIGIN) as never, env);
   const client = await api.createClient({
     redirectUris: [CLIENT_REDIRECT],
     clientName: "Claude Code",
@@ -107,6 +107,37 @@ describe("discovery and sign-in", () => {
     expect(metadata.registration_endpoint).toBe(`${ORIGIN}/register`);
   });
 
+  it("binds tokens to <origin>/mcp, the resource existing grants carry", async () => {
+    const challenge = await SELF.fetch(`${ORIGIN}/mcp`, { method: "POST", body: "{}" });
+    expect(challenge.headers.get("www-authenticate")).toContain(
+      `resource_metadata="${ORIGIN}/.well-known/oauth-protected-resource/mcp"`,
+    );
+    const response = await SELF.fetch(`${ORIGIN}/.well-known/oauth-protected-resource/mcp`);
+    expect(response.status).toBe(200);
+    const metadata = (await response.json()) as {
+      resource: string;
+      authorization_servers: string[];
+    };
+    expect(metadata.resource).toBe(`${ORIGIN}/mcp`);
+    expect(metadata.authorization_servers).toEqual([ORIGIN]);
+  });
+
+  it("derives the resource from each hostname it is served on", async () => {
+    const other = "https://memory.other.example";
+    const response = await SELF.fetch(`${other}/.well-known/oauth-protected-resource/mcp`);
+    expect(((await response.json()) as { resource: string }).resource).toBe(`${other}/mcp`);
+  });
+
+  it("sends plain HTTP to HTTPS, keeping the method", async () => {
+    const response = await SELF.fetch("http://memory.example.com/mcp?x=1", {
+      method: "POST",
+      body: "{}",
+      redirect: "manual",
+    });
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`${ORIGIN}/mcp?x=1`);
+  });
+
   it("lets a client register itself", async () => {
     const response = await SELF.fetch(`${ORIGIN}/register`, {
       method: "POST",
@@ -155,9 +186,23 @@ describe("signed-in MCP session", () => {
     expect(found.data?.count).toBe(1);
   });
 
+  it("refuses a token presented to a different hostname", async () => {
+    const token = await signIn();
+    const response = await SELF.fetch("https://memory.other.example/mcp", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+    expect(response.status).toBe(401);
+  });
+
   it("refuses a token that was revoked", async () => {
     const token = await signIn();
-    const api = getOAuthApi(oauthOptions as never, env);
+    const api = getOAuthApi(oauthOptions(ORIGIN) as never, env);
     const clients = await api.listClients();
     for (const client of clients.items) {
       await api.deleteClient(client.clientId);
